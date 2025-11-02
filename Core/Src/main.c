@@ -18,11 +18,20 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
+#include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ble.h"
+#include "motor.h"
+#include "pid.h"
+#include "tim_self.h"
+#include "breathing_led.h"
 
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,14 +95,76 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_USART1_UART_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
+	//1.串口
+	ble_Init();	
+	
+	//2.定时器任务
+	tim5_init();
+	//pid_init();
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	int16_t  counter_num=0;
+	uint8_t brightness = 0,step=0;
   while (1)
   {
+		// 任务1: 每1ms触发一次增量式pid(速度环) (1kHz)	
+		if(task_flags.run_pid_inc_loop){
+			task_flags.run_pid_inc_loop=false;
+		}
+		
+		// 任务2: 每10ms运行一次位置式pid(角度环) (100Hz)
+		if(task_flags.run_pid_pos_loop){
+			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_11);
+			if(ANGLE_PID)
+			{
+				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
+				pid_angle.now =  (float)counter_num*360/28000.0f;
+				//Motor_run(pid_cal_pos(&pid_angle));
+				vofa_send(4,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target),(float)pid_angle.output);	//��ʱ8.9us
+			}
+			else{
+				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
+				pid_angle.now =  (float)counter_num*360/28000.0f;
+				led_breath_freq=pid_angle.target;
+				vofa_send(3,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target));	//��ʱ8.9us
+				//Motor_run(pid_angle.target);
+			}  
+			task_flags.run_pid_pos_loop=false;
+			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_11);
+		}
+		
+		// 任务3:每20ms计算一次led的亮灭
+		if (task_flags.led_brightness_adjust) {
+			// 1. 更新亮度值
+        brightness += step;
+			// 2. 判断呼吸方向
+			if (brightness >= 1000/led_breath_freq) {
+					// 达到最亮，开始变暗
+					step = -1; 
+			} else if (brightness <= 0) {
+					// 达到最暗，开始变亮
+					step = 1;
+			}
+
+			// 3. 调用函数设定亮度 (这个函数会更新那个被中断使用的全局变量)
+			led_set_brightness(brightness);
+
+			task_flags.led_brightness_adjust = false;
+		}
+		
+		// 任务4: 每2s改变一次target
+		if(task_flags.change_target){
+			//pid_angle.target=-pid_angle.target;
+			task_flags.change_target=false;
+		}
+		
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
