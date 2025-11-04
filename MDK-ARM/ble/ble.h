@@ -5,9 +5,9 @@
 
 #define ble_uart &huart1
 
-#define uart1_buf_size 14
+#define ble_rx_buffer_size 14
 
-extern uint8_t  uart1_buf[uart1_buf_size];//串口接收缓冲区
+extern uint8_t  ble_rx_buffer[];//串口接收缓冲区
 extern uint8_t  test_buf[];//串口发送测试字符串
 
 void ble_Init(void);

@@ -101,10 +101,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
-	//ble_Init();	
-	
-	//2.定时器任务
-	//pid_init();
+	ble_Init();	
 
   /* USER CODE END 2 */
 
@@ -118,47 +115,9 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	int16_t  counter_num=0;
-	uint8_t brightness = 0;
-	int8_t step=0;
+
   while (1)
   {
-		// 任务1: 每1ms触发一次增量式pid(速度环) (1kHz)	
-		
-		// 任务2: 每10ms运行一次位置式pid(角度环) (100Hz)
-
-			if(ANGLE_PID)
-			{
-				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
-				pid_angle.now =  (float)counter_num*360/28000.0f;
-				//Motor_run(pid_cal_pos(&pid_angle));
-				vofa_send(4,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target),(float)pid_angle.output);
-			}
-			else{
-				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
-				pid_angle.now =  (float)counter_num*360/28000.0f;
-				led_breath_freq=pid_angle.target;
-				vofa_send(3,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target));	
-				//Motor_run(pid_angle.target);
-			}  
-		
-		
-		// 任务3:每20ms计算一次led的亮灭
-		
-			// 1. 更新亮度值
-      brightness += step;
-			// 2. 判断呼吸方向
-			if (brightness >= 1000/led_breath_freq) {
-					// 达到最亮，开始变暗
-					step = -1; 
-			} else if (brightness <= 0) {
-					// 达到最暗，开始变亮
-					step = 1;
-			}
-
-			// 3. 调用函数设定亮度 (这个函数会更新那个被中断使用的全局变量)
-			led_set_brightness(brightness);
-		
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -238,20 +197,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
  if (htim->Instance == TIM5) 
-    {
-				//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
-        static uint8_t pwm_counter = 0;
-        if (pwm_counter < led_brightness) {
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
-        }
-				else {
-            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-        }
-        pwm_counter++;
-        if (pwm_counter >= 100) {
-            pwm_counter = 0;
-        }
-    }
+	{
+			//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
+			static uint8_t pwm_counter = 0;
+			if (pwm_counter < led_brightness) {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+			}
+			else {
+					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+			}
+			pwm_counter++;
+			if (pwm_counter >= 100) {
+					pwm_counter = 0;
+			}
+	}
   /* USER CODE END Callback 1 */
 }
 

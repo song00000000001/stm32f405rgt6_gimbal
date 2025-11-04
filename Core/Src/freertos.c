@@ -48,9 +48,11 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-osThreadId led_breathHandle;
-osThreadId pid_angleHandle;
-osThreadId uart_sendHandle;
+osThreadId breathing_led_tHandle;
+osThreadId serial_tx_taskHandle;
+osThreadId cmdparse_taskHandle;
+osMessageQId led_control_queueHandle;
+osMessageQId ble_rx_queueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -58,9 +60,9 @@ osThreadId uart_sendHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
-void StartTask02(void const * argument);
-void StartTask03(void const * argument);
-void StartTask04(void const * argument);
+void led_breath(void const * argument);
+void ble_send(void const * argument);
+void ble_receive(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -102,6 +104,15 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* definition and creation of led_control_queue */
+  osMessageQDef(led_control_queue, 16, uint8_t);
+  led_control_queueHandle = osMessageCreate(osMessageQ(led_control_queue), NULL);
+
+  /* definition and creation of ble_rx_queue */
+  osMessageQDef(ble_rx_queue, 16, uint8_t);
+  ble_rx_queueHandle = osMessageCreate(osMessageQ(ble_rx_queue), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -111,17 +122,17 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of led_breath */
-  osThreadDef(led_breath, StartTask02, osPriorityNormal, 0, 128);
-  led_breathHandle = osThreadCreate(osThread(led_breath), NULL);
+  /* definition and creation of breathing_led_t */
+  osThreadDef(breathing_led_t, led_breath, osPriorityBelowNormal, 0, 128);
+  breathing_led_tHandle = osThreadCreate(osThread(breathing_led_t), NULL);
 
-  /* definition and creation of pid_angle */
-  osThreadDef(pid_angle, StartTask03, osPriorityNormal, 0, 128);
-  pid_angleHandle = osThreadCreate(osThread(pid_angle), NULL);
+  /* definition and creation of serial_tx_task */
+  osThreadDef(serial_tx_task, ble_send, osPriorityLow, 0, 128);
+  serial_tx_taskHandle = osThreadCreate(osThread(serial_tx_task), NULL);
 
-  /* definition and creation of uart_send */
-  osThreadDef(uart_send, StartTask04, osPriorityNormal, 0, 128);
-  uart_sendHandle = osThreadCreate(osThread(uart_send), NULL);
+  /* definition and creation of cmdparse_task */
+  osThreadDef(cmdparse_task, ble_receive, osPriorityNormal, 0, 128);
+  cmdparse_taskHandle = osThreadCreate(osThread(cmdparse_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -147,59 +158,58 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartTask02 */
+/* USER CODE BEGIN Header_led_breath */
 /**
-* @brief Function implementing the led_breath thread.
+* @brief Function implementing the breathing_led_t thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask02 */
-void StartTask02(void const * argument)
+/* USER CODE END Header_led_breath */
+__weak void led_breath(void const * argument)
 {
-  /* USER CODE BEGIN StartTask02 */
-  /* Infinite loop */
-  for(;;)
-  {
-		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
-    osDelay(500);
-  }
-  /* USER CODE END StartTask02 */
-}
-
-/* USER CODE BEGIN Header_StartTask03 */
-/**
-* @brief Function implementing the pid_angle thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask03 */
-void StartTask03(void const * argument)
-{
-  /* USER CODE BEGIN StartTask03 */
+  /* USER CODE BEGIN led_breath */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTask03 */
+  /* USER CODE END led_breath */
 }
 
-/* USER CODE BEGIN Header_StartTask04 */
+/* USER CODE BEGIN Header_ble_send */
 /**
-* @brief Function implementing the uart_send thread.
+* @brief Function implementing the serial_tx_task thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask04 */
-void StartTask04(void const * argument)
+/* USER CODE END Header_ble_send */
+__weak void ble_send(void const * argument)
 {
-  /* USER CODE BEGIN StartTask04 */
+  /* USER CODE BEGIN ble_send */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTask04 */
+  /* USER CODE END ble_send */
+}
+
+/* USER CODE BEGIN Header_ble_receive */
+/**
+* @brief Function implementing the cmdparse_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ble_receive */
+__weak void ble_receive(void const * argument)
+{
+  /* USER CODE BEGIN ble_receive */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END ble_receive */
 }
 
 /* Private application code --------------------------------------------------*/
