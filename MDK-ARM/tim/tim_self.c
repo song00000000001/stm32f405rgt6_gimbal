@@ -18,9 +18,10 @@ void tim5_init(){
 	target_counter=0;
 	HAL_TIM_Base_Start_IT(&htim5);
 }
-
+/*
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) // 该函数在 stm32f1xx_hal_tim.c 中定义为弱函数(__weak)，由用户再定义
 {
+	
 	//1kHz Timer ISR
 	if(htim == &htim5)
 	{
@@ -72,6 +73,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) // 该函数在 stm3
 	}
 
 }
+*/
 
 /*
 	

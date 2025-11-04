@@ -20,6 +20,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "dma.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -97,6 +98,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
 	//ble_Init();	
@@ -235,7 +237,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+ if (htim->Instance == TIM5) 
+    {
+				//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
+        static uint8_t pwm_counter = 0;
+        if (pwm_counter < led_brightness) {
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+        }
+				else {
+            HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+        }
+        pwm_counter++;
+        if (pwm_counter >= 100) {
+            pwm_counter = 0;
+        }
+    }
   /* USER CODE END Callback 1 */
 }
 
