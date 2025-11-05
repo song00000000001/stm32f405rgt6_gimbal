@@ -5,6 +5,7 @@ volatile uint16_t g_led_brightness = 0;
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "cmsis_os.h"
+#include "ble.h"
 
 extern osMessageQId led_control_queueHandle;
 
@@ -14,8 +15,8 @@ void led_breath(void const * argument)
 	static uint32_t breath_period_ms = 1; 
 	// 默认步长周期 1ms，乘以200/step=50后呼吸周期为50ms。20hz
 	uint32_t new_period_from_queue;
-	uint8_t brightness = 0;
-	int8_t step = 4;
+	static uint8_t brightness = 0;
+	static int8_t step = 4;
   /* Infinite loop */
   for(;;)
   {
@@ -35,10 +36,10 @@ void led_breath(void const * argument)
         
         // 3. 更新全局亮度变量 (供PWM中断使用)
         // 这个赋值是原子的，所以不需要互斥锁
-        g_led_brightness = brightness; 
-
+		g_led_brightness = brightness; 
+	  
         // 4. 根据当前周期延时
-        vTaskDelay(pdMS_TO_TICKS(breath_period_ms));
+		osDelay(breath_period_ms);
  
   }
   /* USER CODE END led_breath */

@@ -119,7 +119,7 @@ void HAL_ble_rxCpltCallback(UART_HandleTypeDef *huart)
 		    
         // 重启DMA接收
 		ble_print(ble_rx_buffer,sizeof(ble_rx_buffer)/sizeof(uint8_t));
-        HAL_UART_Receive_DMA(&huart1, ble_rx_buffer, sizeof(ble_rx_buffer));
+		HAL_UART_Receive_DMA(&huart1, ble_rx_buffer, sizeof(ble_rx_buffer));
 	    //HAL_UART_Receive_IT(&huart1, uart1_buf, uart1_buf_size);
    }
 }
@@ -173,7 +173,7 @@ void ble_send(void const * argument)
   /* Infinite loop */
   for(;;)
   {			
-		//vofa_send(1,g_led_brightness);
+		vofa_send(1,(float)g_led_brightness);
 		osDelay(10);
   }
   /* USER CODE END ble_send */
