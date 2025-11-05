@@ -193,6 +193,8 @@ uint8_t MPU_Read_Byte(uint8_t reg)
   return R_Data;		
 }
 
+
+
 typedef struct mpu6050_raw
 {
 	/* data */

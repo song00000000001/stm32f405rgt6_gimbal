@@ -51,8 +51,10 @@ osThreadId defaultTaskHandle;
 osThreadId breathing_led_tHandle;
 osThreadId serial_tx_taskHandle;
 osThreadId cmdparse_taskHandle;
+osThreadId mpu6050_read_taHandle;
 osMessageQId led_control_queueHandle;
 osMessageQId ble_rx_queueHandle;
+osMessageQId mpu_data_queueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -63,6 +65,7 @@ void StartDefaultTask(void const * argument);
 void led_breath(void const * argument);
 void ble_send(void const * argument);
 void ble_receive(void const * argument);
+void mpu6050_read(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -113,6 +116,10 @@ void MX_FREERTOS_Init(void) {
   osMessageQDef(ble_rx_queue, 4, 14);
   ble_rx_queueHandle = osMessageCreate(osMessageQ(ble_rx_queue), NULL);
 
+  /* definition and creation of mpu_data_queue */
+  osMessageQDef(mpu_data_queue, 4, 6);
+  mpu_data_queueHandle = osMessageCreate(osMessageQ(mpu_data_queue), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -133,6 +140,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of cmdparse_task */
   osThreadDef(cmdparse_task, ble_receive, osPriorityNormal, 0, 128);
   cmdparse_taskHandle = osThreadCreate(osThread(cmdparse_task), NULL);
+
+  /* definition and creation of mpu6050_read_ta */
+  osThreadDef(mpu6050_read_ta, mpu6050_read, osPriorityNormal, 0, 128);
+  mpu6050_read_taHandle = osThreadCreate(osThread(mpu6050_read_ta), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -210,6 +221,24 @@ __weak void ble_receive(void const * argument)
     osDelay(1);
   }
   /* USER CODE END ble_receive */
+}
+
+/* USER CODE BEGIN Header_mpu6050_read */
+/**
+* @brief Function implementing the mpu6050_read_ta thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_mpu6050_read */
+__weak void mpu6050_read(void const * argument)
+{
+  /* USER CODE BEGIN mpu6050_read */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END mpu6050_read */
 }
 
 /* Private application code --------------------------------------------------*/

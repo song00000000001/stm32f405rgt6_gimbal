@@ -17,6 +17,8 @@
                 "d:\\code\\code_git\\rm\\Middlewares\\Third_Party\\FreeRTOS\\Source\\CMSIS_RTOS",
                 "d:\\code\\code_git\\rm\\Middlewares\\Third_Party\\FreeRTOS\\Source\\portable\\RVDS\\ARM_CM4F",
                 "d:\\code\\code_git\\rm\\MDK-ARM\\mpu6050",
+                "d:\\code\\code_git\\rm\\MDK-ARM\\can",
+                "d:\\code\\code_git\\rm\\MDK-ARM\\eMPL",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include\\arm_linux",
                 "C:\\Keil_v5\\ARM\\ARMCLANG\\include\\arm_linux_compat",
