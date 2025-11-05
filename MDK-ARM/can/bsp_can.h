@@ -7,6 +7,12 @@
 #define CAN_CONTROL_ID_BASE   0x1ff
 #define CAN_CONTROL_ID_EXTEND 0x2ff
 #define MOTOR_MAX_NUM         7
+#define LED_GREEN_TOGGLE()  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14)
+
+typedef struct {
+    CAN_RxHeaderTypeDef header;//7*uint32=28
+    uint8_t             data[8];//8
+} CAN_Message_t;//36
 
 typedef struct
 {

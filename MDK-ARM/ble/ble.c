@@ -3,11 +3,17 @@
 #include "breathing_led.h"
 #include "pid.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "cmsis_os.h"
+
 uint8_t  ble_rx_buffer[ble_rx_buffer_size];//串口接收缓冲区
 uint8_t  ble_txBuffer[64];//串口发送缓冲区
+extern osMessageQId ble_rx_queueHandle,led_control_queueHandle;
 
 void ble_send(void const * argument);
-	
+void ble_receive_handle(uint8_t *buf,float * f);
+
 void ble_Init(void)
 {
 	if (HAL_UART_Receive_DMA(ble_uart, ble_rx_buffer, ble_rx_buffer_size) != HAL_OK)//手动打开第一次串口接收,并**同时**检查状态。第二次会返回busy。
@@ -17,11 +23,6 @@ void ble_Init(void)
 	}
 }
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "cmsis_os.h"
-
-extern osMessageQId ble_rx_queueHandle,led_control_queueHandle;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -39,6 +40,45 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		//ble_print(ble_rx_buffer,sizeof(ble_rx_buffer)/sizeof(uint8_t));
 		HAL_UART_Receive_DMA(&huart1, ble_rx_buffer, sizeof(ble_rx_buffer));
    }
+}
+
+void ble_send(void const * argument)
+{
+  /* USER CODE BEGIN ble_send */
+  /* Infinite loop */
+  for(;;)
+  {			
+		//vofa_send(1,(float)g_led_brightness);
+		osDelay(10);
+  }
+  /* USER CODE END ble_send */
+}
+
+void ble_receive(void const * argument)
+{
+  /* USER CODE BEGIN ble_receive */
+	uint16_t new_period=1;
+	uint8_t local_rx_buffer[ble_rx_buffer_size];
+  /* Infinite loop */
+  for(;;)
+  {
+	  
+	// 阻塞等待，直到uartRxQueue中有数据	
+	if (xQueueReceive(ble_rx_queueHandle, local_rx_buffer, portMAX_DELAY) == pdPASS)
+	{
+		float led_freq=1;
+		ble_receive_handle(ble_rx_buffer,&led_freq);
+		if(led_freq<=0 || led_freq>20){
+			led_freq=1;
+		}
+		//f=1hz,则需要延时20ms*50=1s,
+		//f_max=20hz,延时1ms*50=50ms
+		new_period=20/led_freq;
+		xQueueSend(led_control_queueHandle, &new_period, 0); 
+	}
+
+  }
+  /* USER CODE END ble_receive */
 }
 
 void ble_receive_handle(uint8_t *buf,float * f)
@@ -81,45 +121,6 @@ void ble_receive_handle(uint8_t *buf,float * f)
 		}
 	}
 	//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
-}
-
-void ble_send(void const * argument)
-{
-  /* USER CODE BEGIN ble_send */
-  /* Infinite loop */
-  for(;;)
-  {			
-		//vofa_send(1,(float)g_led_brightness);
-		osDelay(10);
-  }
-  /* USER CODE END ble_send */
-}
-
-void ble_receive(void const * argument)
-{
-  /* USER CODE BEGIN ble_receive */
-	uint16_t new_period=1;
-	uint8_t local_rx_buffer[ble_rx_buffer_size];
-  /* Infinite loop */
-  for(;;)
-  {
-	  
-	// 阻塞等待，直到uartRxQueue中有数据	
-	if (xQueueReceive(ble_rx_queueHandle, local_rx_buffer, portMAX_DELAY) == pdPASS)
-	{
-		float led_freq=1;
-		ble_receive_handle(ble_rx_buffer,&led_freq);
-		if(led_freq<=0 || led_freq>20){
-			led_freq=1;
-		}
-		//f=1hz,则需要延时20ms*50=1s,
-		//f_max=20hz,延时1ms*50=50ms
-		new_period=20/led_freq;
-		xQueueSend(led_control_queueHandle, &new_period, 0); 
-	}
-
-  }
-  /* USER CODE END ble_receive */
 }
 
 

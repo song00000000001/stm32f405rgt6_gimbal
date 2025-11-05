@@ -35,10 +35,10 @@ void led_breath(void const * argument)
         
       // 3. 更新全局亮度变量 (供PWM中断使用)
       // 这个赋值是原子的，所以不需要互斥锁
-		  g_led_brightness = brightness; 
+	g_led_brightness = brightness; 
 	  
       // 4. 根据当前周期延时
-		  osDelay(breath_period_ms);//100/5=20,20*50=1000
+	osDelay(breath_period_ms);//100/5=20,20*50=1000
  
   }
   /* USER CODE END led_breath */
