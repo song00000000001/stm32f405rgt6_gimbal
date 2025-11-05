@@ -33,6 +33,7 @@
 #include "pid.h"
 #include "breathing_led.h"
 #include "mpu6050.h"
+#include "bsp_can.h"
 
 #include <stdbool.h>
 /* USER CODE END Includes */
@@ -112,6 +113,8 @@ int main(void)
 	HAL_TIM_Base_Start_IT(&htim5);
 	//3.mpu
 	MPU_Init();
+	//4.can
+	can_user_init(&hcan1);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

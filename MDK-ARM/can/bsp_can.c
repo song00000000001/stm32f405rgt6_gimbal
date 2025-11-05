@@ -33,6 +33,9 @@ void can_user_init(CAN_HandleTypeDef* hcan )
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
+	static uint8_t can_cnt=0;
+  if (hcan->Instance == CAN1)
+  {
 #if 0  
   // 1. 从CAN硬件FIFO中获取消息
   if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_msg.header, rx_msg.data) == HAL_OK){
@@ -41,14 +44,37 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         osMessagePut(can_rx_queueHandle, (uint32_t)&rx_msg, 0);
     }
   }
-#endif  
-  if (hcan->Instance == CAN1)
-  {
-    CAN_Message_t rx_msg;
+#elif 1
+	CAN_Message_t rx_msg;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     // 直接发送结构体，FreeRTOS会自动拷贝内容
     xQueueSendFromISR(can_rx_queueHandle, &rx_msg, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+#else	  
+	  
+  CAN_RxHeaderTypeDef rx_header;
+  uint8_t             rx_data[8];
+  if(hcan->Instance == CAN1)
+  {
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data); //receive can data
+  }
+  if ((rx_header.StdId >= FEEDBACK_ID_BASE)
+   && (rx_header.StdId <  FEEDBACK_ID_BASE + MOTOR_MAX_NUM))                  // judge the can id
+  {
+    can_cnt ++;
+    uint8_t index = rx_header.StdId - FEEDBACK_ID_BASE;                  // get motor index by can_id
+    motor_info[index].rotor_angle    = ((rx_data[0] << 8) | rx_data[1]);
+    motor_info[index].rotor_speed    = ((rx_data[2] << 8) | rx_data[3]);
+    motor_info[index].torque_current = ((rx_data[4] << 8) | rx_data[5]);
+    motor_info[index].temp           =   rx_data[6];
+  }
+  if (can_cnt == 500)
+  {
+    can_cnt = 0;
+    LED_GREEN_TOGGLE(); // green led blink indicate can comunication successful 
+  }
+#endif  
+  
   }
 
 }
@@ -72,7 +98,7 @@ void can1_rx(void const * argument){
       LED_GREEN_TOGGLE(); // 接收成功就闪灯
     }
 
-    //osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END can1_rx */
 }

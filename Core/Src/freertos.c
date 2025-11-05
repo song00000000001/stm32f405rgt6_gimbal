@@ -126,7 +126,7 @@ void MX_FREERTOS_Init(void) {
   mpu_data_queueHandle = osMessageCreate(osMessageQ(mpu_data_queue), NULL);
 
   /* definition and creation of can_rx_queue */
-  osMessageQDef(can_rx_queue, 5, 36);
+  osMessageQDef(can_rx_queue, 4, 36);
   can_rx_queueHandle = osMessageCreate(osMessageQ(can_rx_queue), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
