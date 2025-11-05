@@ -106,11 +106,11 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* definition and creation of led_control_queue */
-  osMessageQDef(led_control_queue, 16, uint8_t);
+  osMessageQDef(led_control_queue, 16, uint16_t);
   led_control_queueHandle = osMessageCreate(osMessageQ(led_control_queue), NULL);
 
   /* definition and creation of ble_rx_queue */
-  osMessageQDef(ble_rx_queue, 16, uint8_t);
+  osMessageQDef(ble_rx_queue, 32, 14);
   ble_rx_queueHandle = osMessageCreate(osMessageQ(ble_rx_queue), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */

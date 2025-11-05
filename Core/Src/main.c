@@ -102,7 +102,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	//1.串口
 	ble_Init();	
-
+	//2.pwm
+	HAL_TIM_Base_Start_IT(&htim5);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

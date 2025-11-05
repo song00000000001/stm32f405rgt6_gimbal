@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "breathing_led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,8 +57,8 @@
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim5;
-extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
+extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim6;
 
@@ -184,7 +185,18 @@ void USART1_IRQHandler(void)
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
-
+	//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
+	static uint8_t pwm_counter = 0;
+	if (pwm_counter < g_led_brightness) {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+	}
+	else {
+			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+	}
+	pwm_counter++;
+	if (pwm_counter >= 100) {
+			pwm_counter = 0;
+	}
   /* USER CODE END TIM5_IRQn 0 */
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
