@@ -44,44 +44,43 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void ble_receive_handle(uint8_t *buf,float * f)
 {
 	
-	 if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
-   {
+	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
+   	{
+		return;
+   	}
+	else{
+		float val = 
+			(buf[3] - '0') *1000 +
+			(buf[4] - '0') *100+
+			(buf[5] - '0') *10 +
+			(buf[6] - '0') +
+			(buf[8] - '0') *0.1f +
+			(buf[9] - '0') *0.01f +
+			(buf[10] - '0') *0.001f +
+			(buf[11] - '0') *0.0001f;
+
+		if(buf[2] == '+')
+				val = val;
+		else if(buf[2] == '-')
+				val = -val;
+		else
 				return;
-   }
-		else{
-				float val = 
-								(buf[3] - '0') *1000 +
-								(buf[4] - '0') *100+
-								(buf[5] - '0') *10 +
-								(buf[6] - '0') +
-								(buf[8] - '0') *0.1f +
-								(buf[9] - '0') *0.01f +
-								(buf[10] - '0') *0.001f +
-								(buf[11] - '0') *0.0001f;
 
-				if(buf[2] == '+')
-						val = val;
-				else if(buf[2] == '-')
-						val = -val;
-				else
-						return;
-
-				if(val<-1000) 
-						val=-1000;
-				if(val>=1000) 
-						val=1000;
-				
-				switch(buf[1])
-				{
-					case 'L':
-							*f=val;
-							break;
-					default:
-							break;
-				}
+		if(val<-1000) 
+				val=-1000;
+		if(val>=1000) 
+				val=1000;
+		
+		switch(buf[1])
+		{
+			case 'L':
+					*f=val;
+					break;
+			default:
+					break;
 		}
-		//HAL_UART_Transmit(&huart1, ble_rx_buffer, ble_rx_buffer_size, 100); //串口发送字符串
-		//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
+	}
+	//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
 }
 
 void ble_send(void const * argument)
@@ -105,22 +104,19 @@ void ble_receive(void const * argument)
   for(;;)
   {
 	  
-		// 阻塞等待，直到uartRxQueue中有数据	
-		if (xQueueReceive(ble_rx_queueHandle, local_rx_buffer, portMAX_DELAY) == pdPASS)
-		{
-			float led_freq=1;
-			ble_receive_handle(ble_rx_buffer,&led_freq);
-			if(led_freq<=0 || led_freq>20){
-				led_freq=1;
-			}
-			//vofa_send(1,led_freq);
-			//f=1hz,则需要延时20ms*50=1s,
-			//f_max=20hz,延时1ms*50=50ms
-			new_period=20/led_freq;
-			// 将解析结果发送给呼吸灯任务
-			//vofa_send(2,(float)led_freq,(float)new_period); 
-			xQueueSend(led_control_queueHandle, &new_period, 0); 
+	// 阻塞等待，直到uartRxQueue中有数据	
+	if (xQueueReceive(ble_rx_queueHandle, local_rx_buffer, portMAX_DELAY) == pdPASS)
+	{
+		float led_freq=1;
+		ble_receive_handle(ble_rx_buffer,&led_freq);
+		if(led_freq<=0 || led_freq>20){
+			led_freq=1;
 		}
+		//f=1hz,则需要延时20ms*50=1s,
+		//f_max=20hz,延时1ms*50=50ms
+		new_period=20/led_freq;
+		xQueueSend(led_control_queueHandle, &new_period, 0); 
+	}
 
   }
   /* USER CODE END ble_receive */

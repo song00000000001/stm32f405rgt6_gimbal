@@ -2,6 +2,9 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "cmsis_os.h"
+#include "task.h"
+#include "FreeRTOSConfig.h"
+#include "ble.h"
 
 //初始化MPU6050
 //返回值:0,成功
@@ -150,6 +153,16 @@ uint8_t MPU_Read_Len(uint8_t reg,uint8_t len,uint8_t *buf)
   
   return 0;	
 }
+
+uint8_t MPU_Read_Len_os(uint8_t reg,uint8_t len,uint8_t *buf)
+{ 
+  extern I2C_HandleTypeDef hi2c1;
+  HAL_I2C_Mem_Read(&hi2c1, MPU_READ, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 0xfff);
+ // osDelay(1);
+  
+  return 0;	
+}
+
 //IIC写一个字节 
 //reg:寄存器地址
 //data:数据
@@ -180,14 +193,49 @@ uint8_t MPU_Read_Byte(uint8_t reg)
   return R_Data;		
 }
 
+typedef struct mpu6050_raw
+{
+	/* data */
+	short ax;
+	short ay;
+	short az;
+	short gx;
+	short gy;
+	short gz;
+}mpu6050_raw;
+
+
+
 void mpu6050_read(void const * argument)
 {
-  /* USER CODE BEGIN mpu6050_read */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+	/* USER CODE BEGIN mpu6050_read */
+	/* Infinite loop */
+	uint8_t mpu_buf[6],res;
+	mpu6050_raw mpu6050_raw_data;
+	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
+    const TickType_t xFrequency = pdMS_TO_TICKS(20); // 20ms
+        
+	for(;;)
+	{
+		// 1. 使用vTaskDelayUntil实现精准的周期性延时
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+	
+		res=MPU_Read_Len_os(MPU_ACCEL_XOUTH_REG,6,mpu_buf);
+		if(res==0)
+		{
+			mpu6050_raw_data.ax=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
+			mpu6050_raw_data.ay=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
+			mpu6050_raw_data.az=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
+		} 	
+		res=MPU_Read_Len_os(MPU_GYRO_XOUTH_REG,6,mpu_buf);
+		if(res==0)
+		{
+			mpu6050_raw_data.gx=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
+			mpu6050_raw_data.gy=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
+			mpu6050_raw_data.gz=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
+		} 	
+		vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
+	}
   /* USER CODE END mpu6050_read */
 }
 
