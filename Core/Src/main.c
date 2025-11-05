@@ -32,6 +32,7 @@
 #include "motor.h"
 #include "pid.h"
 #include "breathing_led.h"
+#include "mpu6050.h"
 
 #include <stdbool.h>
 /* USER CODE END Includes */
@@ -109,6 +110,8 @@ int main(void)
 	ble_Init();	
 	//2.pwm
 	HAL_TIM_Base_Start_IT(&htim5);
+	//3.mpu
+	MPU_Init();
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

@@ -5,12 +5,12 @@
  */
 #ifndef DMPMAP_H
 #define DMPMAP_H
-
+ 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
+ 
 #define DMP_PTAT    0
 #define DMP_XGYR    2
 #define DMP_YGYR    4
