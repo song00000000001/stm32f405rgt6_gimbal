@@ -52,9 +52,12 @@ osThreadId breathing_led_tHandle;
 osThreadId serial_tx_taskHandle;
 osThreadId cmdparse_taskHandle;
 osThreadId mpu6050_read_taHandle;
+osThreadId can1_rx_taskHandle;
+osThreadId can1_tx_taskHandle;
 osMessageQId led_control_queueHandle;
 osMessageQId ble_rx_queueHandle;
 osMessageQId mpu_data_queueHandle;
+osMessageQId can_rx_queueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -66,6 +69,8 @@ void led_breath(void const * argument);
 void ble_send(void const * argument);
 void ble_receive(void const * argument);
 void mpu6050_read(void const * argument);
+void can1_rx(void const * argument);
+void can1_tx(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -120,6 +125,10 @@ void MX_FREERTOS_Init(void) {
   osMessageQDef(mpu_data_queue, 4, 6);
   mpu_data_queueHandle = osMessageCreate(osMessageQ(mpu_data_queue), NULL);
 
+  /* definition and creation of can_rx_queue */
+  osMessageQDef(can_rx_queue, 4, 8);
+  can_rx_queueHandle = osMessageCreate(osMessageQ(can_rx_queue), NULL);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -144,6 +153,14 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of mpu6050_read_ta */
   osThreadDef(mpu6050_read_ta, mpu6050_read, osPriorityNormal, 0, 128);
   mpu6050_read_taHandle = osThreadCreate(osThread(mpu6050_read_ta), NULL);
+
+  /* definition and creation of can1_rx_task */
+  osThreadDef(can1_rx_task, can1_rx, osPriorityNormal, 0, 128);
+  can1_rx_taskHandle = osThreadCreate(osThread(can1_rx_task), NULL);
+
+  /* definition and creation of can1_tx_task */
+  osThreadDef(can1_tx_task, can1_tx, osPriorityNormal, 0, 128);
+  can1_tx_taskHandle = osThreadCreate(osThread(can1_tx_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -239,6 +256,42 @@ __weak void mpu6050_read(void const * argument)
     osDelay(1);
   }
   /* USER CODE END mpu6050_read */
+}
+
+/* USER CODE BEGIN Header_can1_rx */
+/**
+* @brief Function implementing the can1_rx_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_can1_rx */
+__weak void can1_rx(void const * argument)
+{
+  /* USER CODE BEGIN can1_rx */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END can1_rx */
+}
+
+/* USER CODE BEGIN Header_can1_tx */
+/**
+* @brief Function implementing the can1_tx_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_can1_tx */
+__weak void can1_tx(void const * argument)
+{
+  /* USER CODE BEGIN can1_tx */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END can1_tx */
 }
 
 /* Private application code --------------------------------------------------*/
