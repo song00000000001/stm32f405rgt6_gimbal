@@ -23,7 +23,11 @@
 #include "inv_mpu_dmp_motion_driver.h"
 #include "dmpKey.h"
 #include "dmpmap.h"
-
+ 
+ 
+//定义目标板采用MSP430
+#define  MOTION_DRIVER_TARGET_MSP430
+ 
 /* The following functions must be defined for this platform:
  * i2c_write(unsigned char slave_addr, unsigned char reg_addr,
  *      unsigned char length, unsigned char const *data)
@@ -33,13 +37,13 @@
  * get_ms(unsigned long *count)
  */
 #if defined MOTION_DRIVER_TARGET_MSP430
-#include "msp430.h"
-#include "msp430_clock.h"
-#define delay_ms    msp430_delay_ms
-#define get_ms      msp430_get_clock_ms
-#define log_i(...)     do {} while (0)
-#define log_e(...)     do {} while (0)
-
+//#include "msp430.h"
+//#include "msp430_clock.h"
+#define delay_ms    delay_ms
+#define get_ms      mget_ms
+#define log_i 		printf
+#define log_e  		printf
+ 
 #elif defined EMPL_TARGET_MSP430
 #include "msp430.h"
 #include "msp430_clock.h"
@@ -48,7 +52,7 @@
 #define get_ms      msp430_get_clock_ms
 #define log_i       MPL_LOGI
 #define log_e       MPL_LOGE
-
+ 
 #elif defined EMPL_TARGET_UC3L0
 /* Instead of using the standard TWI driver from the ASF library, we're using
  * a TWI driver that follows the slave address + register address convention.
@@ -61,11 +65,9 @@
 #define get_ms  uc3l0_get_clock_ms
 #define log_i       MPL_LOGI
 #define log_e       MPL_LOGE
-
 #else
 #error  Gyro driver is missing the system layer implementations.
 #endif
-
 /* These defines are copied from dmpDefaultMPU6050.c in the general MPL
  * releases. These defines may change for each DMP image, so be sure to modify
  * these values when switching to a new image.
@@ -120,10 +122,8 @@
 #define CFG_ANDROID_ORIENT_INT  (1853)
 #define CFG_GYRO_RAW_DATA       (2722)
 #define X_GRT_Y_TMP2            (1379)
-
 #define D_0_22                  (22+512)
 #define D_0_24                  (24+512)
-
 #define D_0_36                  (36)
 #define D_0_52                  (52)
 #define D_0_96                  (96)
@@ -136,7 +136,6 @@
 #define D_0_228                 (228)
 #define D_0_232                 (232)
 #define D_0_236                 (236)
-
 #define D_1_2                   (256 + 2)
 #define D_1_4                   (256 + 4)
 #define D_1_8                   (256 + 8)
@@ -178,7 +177,6 @@
 #define D_2_244                 (512 + 244)
 #define D_2_248                 (512 + 248)
 #define D_2_252                 (512 + 252)
-
 #define CPASS_BIAS_X            (35 * 16 + 4)
 #define CPASS_BIAS_Y            (35 * 16 + 8)
 #define CPASS_BIAS_Z            (35 * 16 + 12)
@@ -198,17 +196,14 @@
 #define D_ACSX                  (40 * 16 + 4)
 #define D_ACSY                  (40 * 16 + 8)
 #define D_ACSZ                  (40 * 16 + 12)
-
 #define FLICK_MSG               (45 * 16 + 4)
 #define FLICK_COUNTER           (45 * 16 + 8)
 #define FLICK_LOWER             (45 * 16 + 12)
 #define FLICK_UPPER             (46 * 16 + 12)
-
 #define D_AUTH_OUT              (992)
 #define D_AUTH_IN               (996)
 #define D_AUTH_A                (1000)
 #define D_AUTH_B                (1004)
-
 #define D_PEDSTD_BP_B           (768 + 0x1C)
 #define D_PEDSTD_HP_A           (768 + 0x78)
 #define D_PEDSTD_HP_B           (768 + 0x7C)
@@ -227,12 +222,9 @@
 #define D_PEDSTD_STEPCTR        (768 + 0x60)
 #define D_PEDSTD_TIMECTR        (964)
 #define D_PEDSTD_DECI           (768 + 0xA0)
-
 #define D_HOST_NO_MOT           (976)
 #define D_ACCEL_BIAS            (660)
-
 #define D_ORIENT_GAP            (76)
-
 #define D_TILT0_H               (48)
 #define D_TILT0_L               (50)
 #define D_TILT1_H               (52)
@@ -241,9 +233,7 @@
 #define D_TILT2_L               (58)
 #define D_TILT3_H               (60)
 #define D_TILT3_L               (62)
-
 #define DMP_CODE_SIZE           (3062)
-
 static const unsigned char dmp_memory[DMP_CODE_SIZE] = {
     /* bank # 0 */
     0x00, 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x24, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x00,
@@ -313,7 +303,6 @@ static const unsigned char dmp_memory[DMP_CODE_SIZE] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x67, 0x7d, 0xdf, 0x7e, 0x72, 0x90, 0x2e, 0x55, 0x4c, 0xf6, 0xe6, 0x88,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
     /* bank # 4 */
     0xd8, 0xdc, 0xb4, 0xb8, 0xb0, 0xd8, 0xb9, 0xab, 0xf3, 0xf8, 0xfa, 0xb3, 0xb7, 0xbb, 0x8e, 0x9e,
     0xae, 0xf1, 0x32, 0xf5, 0x1b, 0xf1, 0xb4, 0xb8, 0xb0, 0x80, 0x97, 0xf1, 0xa9, 0xdf, 0xdf, 0xdf,
@@ -451,22 +440,15 @@ static const unsigned char dmp_memory[DMP_CODE_SIZE] = {
     0xac, 0xde, 0x80, 0x92, 0xa2, 0xf2, 0x4c, 0x82, 0xa8, 0xf1, 0xca, 0xf2, 0x35, 0xf1, 0x96, 0x88,
     0xa6, 0xd9, 0x00, 0xd8, 0xf1, 0xff
 };
-
 static const unsigned short sStartAddress = 0x0400;
-
 /* END OF SECTION COPIED FROM dmpDefaultMPU6050.c */
-
 #define INT_SRC_TAP             (0x01)
 #define INT_SRC_ANDROID_ORIENT  (0x08)
-
 #define DMP_FEATURE_SEND_ANY_GYRO   (DMP_FEATURE_SEND_RAW_GYRO | \
                                      DMP_FEATURE_SEND_CAL_GYRO)
-
 #define MAX_PACKET_LENGTH   (32)
-
 #define DMP_SAMPLE_RATE     (200)
 #define GYRO_SF             (46850825LL * 200 / DMP_SAMPLE_RATE)
-
 #define FIFO_CORRUPTION_CHECK
 #ifdef FIFO_CORRUPTION_CHECK
 #define QUAT_ERROR_THRESH       (1L<<24)
@@ -474,7 +456,6 @@ static const unsigned short sStartAddress = 0x0400;
 #define QUAT_MAG_SQ_MIN         (QUAT_MAG_SQ_NORMALIZED - QUAT_ERROR_THRESH)
 #define QUAT_MAG_SQ_MAX         (QUAT_MAG_SQ_NORMALIZED + QUAT_ERROR_THRESH)
 #endif
-
 struct dmp_s {
     void (*tap_cb)(unsigned char count, unsigned char direction);
     void (*android_orient_cb)(unsigned char orientation);
@@ -483,16 +464,22 @@ struct dmp_s {
     unsigned short fifo_rate;
     unsigned char packet_length;
 };
-
-static struct dmp_s dmp = {
-    .tap_cb = NULL,
-    .android_orient_cb = NULL,
-    .orient = 0,
-    .feature_mask = 0,
-    .fifo_rate = 0,
-    .packet_length = 0
+//static struct dmp_s dmp = {
+//    .tap_cb = NULL,
+//    .android_orient_cb = NULL,
+//    .orient = 0,
+//    .feature_mask = 0,
+//    .fifo_rate = 0,
+//    .packet_length = 0
+//};
+static struct dmp_s dmp={
+  NULL,
+  NULL,
+  0,
+  0,
+  0,
+  0
 };
-
 /**
  *  @brief  Load the DMP with this image.
  *  @return 0 if successful.
@@ -502,7 +489,6 @@ int dmp_load_motion_driver_firmware(void)
     return mpu_load_firmware(DMP_CODE_SIZE, dmp_memory, sStartAddress,
         DMP_SAMPLE_RATE);
 }
-
 /**
  *  @brief      Push gyro and accel orientation to the DMP.
  *  The orientation is represented here as the output of
@@ -517,20 +503,17 @@ int dmp_set_orientation(unsigned short orient)
     const unsigned char accel_axes[3] = {DINA0C, DINAC9, DINA2C};
     const unsigned char gyro_sign[3] = {DINA36, DINA56, DINA76};
     const unsigned char accel_sign[3] = {DINA26, DINA46, DINA66};
-
     gyro_regs[0] = gyro_axes[orient & 3];
     gyro_regs[1] = gyro_axes[(orient >> 3) & 3];
     gyro_regs[2] = gyro_axes[(orient >> 6) & 3];
     accel_regs[0] = accel_axes[orient & 3];
     accel_regs[1] = accel_axes[(orient >> 3) & 3];
     accel_regs[2] = accel_axes[(orient >> 6) & 3];
-
     /* Chip-to-body, axes only. */
     if (mpu_write_mem(FCFG_1, 3, gyro_regs))
         return -1;
     if (mpu_write_mem(FCFG_2, 3, accel_regs))
         return -1;
-
     memcpy(gyro_regs, gyro_sign, 3);
     memcpy(accel_regs, accel_sign, 3);
     if (orient & 4) {
@@ -545,7 +528,6 @@ int dmp_set_orientation(unsigned short orient)
         gyro_regs[2] |= 1;
         accel_regs[2] |= 1;
     }
-
     /* Chip-to-body, sign only. */
     if (mpu_write_mem(FCFG_3, 3, gyro_regs))
         return -1;
@@ -554,7 +536,6 @@ int dmp_set_orientation(unsigned short orient)
     dmp.orient = orient;
     return 0;
 }
-
 /**
  *  @brief      Push gyro biases to the DMP.
  *  Because the gyro integration is handled in the DMP, any gyro biases
@@ -569,7 +550,6 @@ int dmp_set_gyro_bias(long *bias)
 {
     long gyro_bias_body[3];
     unsigned char regs[4];
-
     gyro_bias_body[0] = bias[dmp.orient & 3];
     if (dmp.orient & 4)
         gyro_bias_body[0] *= -1;
@@ -579,7 +559,6 @@ int dmp_set_gyro_bias(long *bias)
     gyro_bias_body[2] = bias[(dmp.orient >> 6) & 3];
     if (dmp.orient & 0x100)
         gyro_bias_body[2] *= -1;
-
 #ifdef EMPL_NO_64BIT
     gyro_bias_body[0] = (long)(((float)gyro_bias_body[0] * GYRO_SF) / 1073741824.f);
     gyro_bias_body[1] = (long)(((float)gyro_bias_body[1] * GYRO_SF) / 1073741824.f);
@@ -589,28 +568,24 @@ int dmp_set_gyro_bias(long *bias)
     gyro_bias_body[1] = (long)(((long long)gyro_bias_body[1] * GYRO_SF) >> 30);
     gyro_bias_body[2] = (long)(((long long)gyro_bias_body[2] * GYRO_SF) >> 30);
 #endif
-
     regs[0] = (unsigned char)((gyro_bias_body[0] >> 24) & 0xFF);
     regs[1] = (unsigned char)((gyro_bias_body[0] >> 16) & 0xFF);
     regs[2] = (unsigned char)((gyro_bias_body[0] >> 8) & 0xFF);
     regs[3] = (unsigned char)(gyro_bias_body[0] & 0xFF);
     if (mpu_write_mem(D_EXT_GYRO_BIAS_X, 4, regs))
         return -1;
-
     regs[0] = (unsigned char)((gyro_bias_body[1] >> 24) & 0xFF);
     regs[1] = (unsigned char)((gyro_bias_body[1] >> 16) & 0xFF);
     regs[2] = (unsigned char)((gyro_bias_body[1] >> 8) & 0xFF);
     regs[3] = (unsigned char)(gyro_bias_body[1] & 0xFF);
     if (mpu_write_mem(D_EXT_GYRO_BIAS_Y, 4, regs))
         return -1;
-
     regs[0] = (unsigned char)((gyro_bias_body[2] >> 24) & 0xFF);
     regs[1] = (unsigned char)((gyro_bias_body[2] >> 16) & 0xFF);
     regs[2] = (unsigned char)((gyro_bias_body[2] >> 8) & 0xFF);
     regs[3] = (unsigned char)(gyro_bias_body[2] & 0xFF);
     return mpu_write_mem(D_EXT_GYRO_BIAS_Z, 4, regs);
 }
-
 /**
  *  @brief      Push accel biases to the DMP.
  *  These biases will be removed from the DMP 6-axis quaternion.
@@ -623,11 +598,9 @@ int dmp_set_accel_bias(long *bias)
     unsigned char regs[12];
     long long accel_sf;
     unsigned short accel_sens;
-
     mpu_get_accel_sens(&accel_sens);
     accel_sf = (long long)accel_sens << 15;
-    __no_operation();
-
+    //__no_operation();
     accel_bias_body[0] = bias[dmp.orient & 3];
     if (dmp.orient & 4)
         accel_bias_body[0] *= -1;
@@ -637,7 +610,6 @@ int dmp_set_accel_bias(long *bias)
     accel_bias_body[2] = bias[(dmp.orient >> 6) & 3];
     if (dmp.orient & 0x100)
         accel_bias_body[2] *= -1;
-
 #ifdef EMPL_NO_64BIT
     accel_bias_body[0] = (long)(((float)accel_bias_body[0] * accel_sf) / 1073741824.f);
     accel_bias_body[1] = (long)(((float)accel_bias_body[1] * accel_sf) / 1073741824.f);
@@ -647,7 +619,6 @@ int dmp_set_accel_bias(long *bias)
     accel_bias_body[1] = (long)(((long long)accel_bias_body[1] * accel_sf) >> 30);
     accel_bias_body[2] = (long)(((long long)accel_bias_body[2] * accel_sf) >> 30);
 #endif
-
     regs[0] = (unsigned char)((accel_bias_body[0] >> 24) & 0xFF);
     regs[1] = (unsigned char)((accel_bias_body[0] >> 16) & 0xFF);
     regs[2] = (unsigned char)((accel_bias_body[0] >> 8) & 0xFF);
@@ -662,7 +633,6 @@ int dmp_set_accel_bias(long *bias)
     regs[11] = (unsigned char)(accel_bias_body[2] & 0xFF);
     return mpu_write_mem(D_ACCEL_BIAS, 12, regs);
 }
-
 /**
  *  @brief      Set DMP output rate.
  *  Only used when DMP is on.
@@ -675,7 +645,6 @@ int dmp_set_fifo_rate(unsigned short rate)
         0xc4, DINAAA, DINAF1, DINADF, DINADF, 0xBB, 0xAF, DINADF, DINADF};
     unsigned short div;
     unsigned char tmp[8];
-
     if (rate > DMP_SAMPLE_RATE)
         return -1;
     div = DMP_SAMPLE_RATE / rate - 1;
@@ -685,11 +654,9 @@ int dmp_set_fifo_rate(unsigned short rate)
         return -1;
     if (mpu_write_mem(CFG_6, 12, (unsigned char*)regs_end))
         return -1;
-
     dmp.fifo_rate = rate;
     return 0;
 }
-
 /**
  *  @brief      Get DMP output rate.
  *  @param[out] rate    Current fifo rate (Hz).
@@ -700,7 +667,6 @@ int dmp_get_fifo_rate(unsigned short *rate)
     rate[0] = dmp.fifo_rate;
     return 0;
 }
-
 /**
  *  @brief      Set tap threshold for a specific axis.
  *  @param[in]  axis    1, 2, and 4 for XYZ accel, respectively.
@@ -714,9 +680,7 @@ int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
     unsigned short dmp_thresh, dmp_thresh_2;
     if (!(axis & TAP_XYZ) || thresh > 1600)
         return -1;
-
     scaled_thresh = (float)thresh / DMP_SAMPLE_RATE;
-
     mpu_get_accel_fsr(&accel_fsr);
     switch (accel_fsr) {
     case 2:
@@ -746,7 +710,6 @@ int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
     tmp[1] = (unsigned char)(dmp_thresh & 0xFF);
     tmp[2] = (unsigned char)(dmp_thresh_2 >> 8);
     tmp[3] = (unsigned char)(dmp_thresh_2 & 0xFF);
-
     if (axis & TAP_X) {
         if (mpu_write_mem(DMP_TAP_THX, 2, tmp))
             return -1;
@@ -767,7 +730,6 @@ int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
     }
     return 0;
 }
-
 /**
  *  @brief      Set which axes will register a tap.
  *  @param[in]  axis    1, 2, and 4 for XYZ, respectively.
@@ -776,7 +738,6 @@ int dmp_set_tap_thresh(unsigned char axis, unsigned short thresh)
 int dmp_set_tap_axes(unsigned char axis)
 {
     unsigned char tmp = 0;
-
     if (axis & TAP_X)
         tmp |= 0x30;
     if (axis & TAP_Y)
@@ -785,7 +746,6 @@ int dmp_set_tap_axes(unsigned char axis)
         tmp |= 0x03;
     return mpu_write_mem(D_1_72, 1, &tmp);
 }
-
 /**
  *  @brief      Set minimum number of taps needed for an interrupt.
  *  @param[in]  min_taps    Minimum consecutive taps (1-4).
@@ -794,16 +754,13 @@ int dmp_set_tap_axes(unsigned char axis)
 int dmp_set_tap_count(unsigned char min_taps)
 {
     unsigned char tmp;
-
     if (min_taps < 1)
         min_taps = 1;
     else if (min_taps > 4)
         min_taps = 4;
-
     tmp = min_taps - 1;
     return mpu_write_mem(D_1_79, 1, &tmp);
 }
-
 /**
  *  @brief      Set length between valid taps.
  *  @param[in]  time    Milliseconds between taps.
@@ -813,13 +770,11 @@ int dmp_set_tap_time(unsigned short time)
 {
     unsigned short dmp_time;
     unsigned char tmp[2];
-
     dmp_time = time / (1000 / DMP_SAMPLE_RATE);
     tmp[0] = (unsigned char)(dmp_time >> 8);
     tmp[1] = (unsigned char)(dmp_time & 0xFF);
     return mpu_write_mem(DMP_TAPW_MIN, 2, tmp);
 }
-
 /**
  *  @brief      Set max time between taps to register as a multi-tap.
  *  @param[in]  time    Max milliseconds between taps.
@@ -829,13 +784,11 @@ int dmp_set_tap_time_multi(unsigned short time)
 {
     unsigned short dmp_time;
     unsigned char tmp[2];
-
     dmp_time = time / (1000 / DMP_SAMPLE_RATE);
     tmp[0] = (unsigned char)(dmp_time >> 8);
     tmp[1] = (unsigned char)(dmp_time & 0xFF);
     return mpu_write_mem(D_1_218, 2, tmp);
 }
-
 /**
  *  @brief      Set shake rejection threshold.
  *  If the DMP detects a gyro sample larger than @e thresh, taps are rejected.
@@ -853,7 +806,6 @@ int dmp_set_shake_reject_thresh(long sf, unsigned short thresh)
     tmp[3] = (unsigned char)((long)thresh_scaled & 0xFF);
     return mpu_write_mem(D_1_92, 4, tmp);
 }
-
 /**
  *  @brief      Set shake rejection time.
  *  Sets the length of time that the gyro must be outside of the threshold set
@@ -865,13 +817,11 @@ int dmp_set_shake_reject_thresh(long sf, unsigned short thresh)
 int dmp_set_shake_reject_time(unsigned short time)
 {
     unsigned char tmp[2];
-
     time /= (1000 / DMP_SAMPLE_RATE);
     tmp[0] = time >> 8;
     tmp[1] = time & 0xFF;
     return mpu_write_mem(D_1_90,2,tmp);
 }
-
 /**
  *  @brief      Set shake rejection timeout.
  *  Sets the length of time after a shake rejection that the gyro must stay
@@ -883,13 +833,11 @@ int dmp_set_shake_reject_time(unsigned short time)
 int dmp_set_shake_reject_timeout(unsigned short time)
 {
     unsigned char tmp[2];
-
     time /= (1000 / DMP_SAMPLE_RATE);
     tmp[0] = time >> 8;
     tmp[1] = time & 0xFF;
     return mpu_write_mem(D_1_88,2,tmp);
 }
-
 /**
  *  @brief      Get current step count.
  *  @param[out] count   Number of steps detected.
@@ -900,15 +848,12 @@ int dmp_get_pedometer_step_count(unsigned long *count)
     unsigned char tmp[4];
     if (!count)
         return -1;
-
     if (mpu_read_mem(D_PEDSTD_STEPCTR, 4, tmp))
         return -1;
-
     count[0] = ((unsigned long)tmp[0] << 24) | ((unsigned long)tmp[1] << 16) |
         ((unsigned long)tmp[2] << 8) | tmp[3];
     return 0;
 }
-
 /**
  *  @brief      Overwrite current step count.
  *  WARNING: This function writes to DMP memory and could potentially encounter
@@ -919,14 +864,12 @@ int dmp_get_pedometer_step_count(unsigned long *count)
 int dmp_set_pedometer_step_count(unsigned long count)
 {
     unsigned char tmp[4];
-
     tmp[0] = (unsigned char)((count >> 24) & 0xFF);
     tmp[1] = (unsigned char)((count >> 16) & 0xFF);
     tmp[2] = (unsigned char)((count >> 8) & 0xFF);
     tmp[3] = (unsigned char)(count & 0xFF);
     return mpu_write_mem(D_PEDSTD_STEPCTR, 4, tmp);
 }
-
 /**
  *  @brief      Get duration of walking time.
  *  @param[in]  time    Walk time in milliseconds.
@@ -937,15 +880,12 @@ int dmp_get_pedometer_walk_time(unsigned long *time)
     unsigned char tmp[4];
     if (!time)
         return -1;
-
     if (mpu_read_mem(D_PEDSTD_TIMECTR, 4, tmp))
         return -1;
-
     time[0] = (((unsigned long)tmp[0] << 24) | ((unsigned long)tmp[1] << 16) |
         ((unsigned long)tmp[2] << 8) | tmp[3]) * 20;
     return 0;
 }
-
 /**
  *  @brief      Overwrite current walk time.
  *  WARNING: This function writes to DMP memory and could potentially encounter
@@ -955,16 +895,13 @@ int dmp_get_pedometer_walk_time(unsigned long *time)
 int dmp_set_pedometer_walk_time(unsigned long time)
 {
     unsigned char tmp[4];
-
     time /= 20;
-
     tmp[0] = (unsigned char)((time >> 24) & 0xFF);
     tmp[1] = (unsigned char)((time >> 16) & 0xFF);
     tmp[2] = (unsigned char)((time >> 8) & 0xFF);
     tmp[3] = (unsigned char)(time & 0xFF);
     return mpu_write_mem(D_PEDSTD_TIMECTR, 4, tmp);
 }
-
 /**
  *  @brief      Enable DMP features.
  *  The following \#define's are used in the input mask:
@@ -985,7 +922,7 @@ int dmp_set_pedometer_walk_time(unsigned long time)
 int dmp_enable_feature(unsigned short mask)
 {
     unsigned char tmp[10];
-
+ 
     /* TODO: All of these settings can probably be integrated into the default
      * DMP image.
      */
@@ -995,7 +932,7 @@ int dmp_enable_feature(unsigned short mask)
     tmp[2] = (unsigned char)((GYRO_SF >> 8) & 0xFF);
     tmp[3] = (unsigned char)(GYRO_SF & 0xFF);
     mpu_write_mem(D_0_104, 4, tmp);
-
+ 
     /* Send sensor data to the FIFO. */
     tmp[0] = 0xA3;
     if (mask & DMP_FEATURE_SEND_RAW_ACCEL) {
@@ -1020,19 +957,19 @@ int dmp_enable_feature(unsigned short mask)
     tmp[8] = 0xA3;
     tmp[9] = 0xA3;
     mpu_write_mem(CFG_15,10,tmp);
-
+ 
     /* Send gesture data to the FIFO. */
     if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
         tmp[0] = DINA20;
     else
         tmp[0] = 0xD8;
     mpu_write_mem(CFG_27,1,tmp);
-
+ 
     if (mask & DMP_FEATURE_GYRO_CAL)
         dmp_enable_gyro_cal(1);
     else
         dmp_enable_gyro_cal(0);
-
+ 
     if (mask & DMP_FEATURE_SEND_ANY_GYRO) {
         if (mask & DMP_FEATURE_SEND_CAL_GYRO) {
             tmp[0] = 0xB2;
@@ -1047,7 +984,7 @@ int dmp_enable_feature(unsigned short mask)
         }
         mpu_write_mem(CFG_GYRO_RAW_DATA, 4, tmp);
     }
-
+ 
     if (mask & DMP_FEATURE_TAP) {
         /* Enable tap. */
         tmp[0] = 0xF8;
@@ -1057,7 +994,7 @@ int dmp_enable_feature(unsigned short mask)
         dmp_set_tap_count(1);
         dmp_set_tap_time(100);
         dmp_set_tap_time_multi(500);
-
+ 
         dmp_set_shake_reject_thresh(GYRO_SF, 200);
         dmp_set_shake_reject_time(40);
         dmp_set_shake_reject_timeout(10);
@@ -1065,27 +1002,27 @@ int dmp_enable_feature(unsigned short mask)
         tmp[0] = 0xD8;
         mpu_write_mem(CFG_20, 1, tmp);
     }
-
+ 
     if (mask & DMP_FEATURE_ANDROID_ORIENT) {
         tmp[0] = 0xD9;
     } else
         tmp[0] = 0xD8;
     mpu_write_mem(CFG_ANDROID_ORIENT_INT, 1, tmp);
-
+ 
     if (mask & DMP_FEATURE_LP_QUAT)
         dmp_enable_lp_quat(1);
     else
         dmp_enable_lp_quat(0);
-
+ 
     if (mask & DMP_FEATURE_6X_LP_QUAT)
         dmp_enable_6x_lp_quat(1);
     else
         dmp_enable_6x_lp_quat(0);
-
+ 
     /* Pedometer is always enabled. */
     dmp.feature_mask = mask | DMP_FEATURE_PEDOMETER;
     mpu_reset_fifo();
-
+ 
     dmp.packet_length = 0;
     if (mask & DMP_FEATURE_SEND_RAW_ACCEL)
         dmp.packet_length += 6;
@@ -1095,10 +1032,10 @@ int dmp_enable_feature(unsigned short mask)
         dmp.packet_length += 16;
     if (mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
         dmp.packet_length += 4;
-
+ 
     return 0;
 }
-
+ 
 /**
  *  @brief      Get list of currently enabled DMP features.
  *  @param[out] Mask of enabled features.
@@ -1109,7 +1046,7 @@ int dmp_get_enabled_features(unsigned short *mask)
     mask[0] = dmp.feature_mask;
     return 0;
 }
-
+ 
 /**
  *  @brief      Calibrate the gyro data in the DMP.
  *  After eight seconds of no motion, the DMP will compute gyro biases and
@@ -1129,7 +1066,7 @@ int dmp_enable_gyro_cal(unsigned char enable)
         return mpu_write_mem(CFG_MOTION_BIAS, 9, regs);
     }
 }
-
+ 
 /**
  *  @brief      Generate 3-axis quaternions from the DMP.
  *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
@@ -1148,12 +1085,12 @@ int dmp_enable_lp_quat(unsigned char enable)
     }
     else
         memset(regs, 0x8B, 4);
-
+ 
     mpu_write_mem(CFG_LP_QUAT, 4, regs);
-
+ 
     return mpu_reset_fifo();
 }
-
+ 
 /**
  *  @brief       Generate 6-axis quaternions from the DMP.
  *  In this driver, the 3-axis and 6-axis DMP quaternion features are mutually
@@ -1171,12 +1108,12 @@ int dmp_enable_6x_lp_quat(unsigned char enable)
         regs[3] = DINA38;
     } else
         memset(regs, 0xA3, 4);
-
+ 
     mpu_write_mem(CFG_8, 4, regs);
-
+ 
     return mpu_reset_fifo();
 }
-
+ 
 /**
  *  @brief      Decode the four-byte gesture data and execute any callbacks.
  *  @param[in]  gesture Gesture data from DMP packet.
@@ -1185,10 +1122,10 @@ int dmp_enable_6x_lp_quat(unsigned char enable)
 static int decode_gesture(unsigned char *gesture)
 {
     unsigned char tap, android_orient;
-
+ 
     android_orient = gesture[3] & 0xC0;
     tap = 0x3F & gesture[3];
-
+ 
     if (gesture[1] & INT_SRC_TAP) {
         unsigned char direction, count;
         direction = tap >> 3;
@@ -1196,15 +1133,15 @@ static int decode_gesture(unsigned char *gesture)
         if (dmp.tap_cb)
             dmp.tap_cb(direction, count);
     }
-
+ 
     if (gesture[1] & INT_SRC_ANDROID_ORIENT) {
         if (dmp.android_orient_cb)
             dmp.android_orient_cb(android_orient >> 6);
     }
-
+ 
     return 0;
 }
-
+ 
 /**
  *  @brief      Specify when a DMP interrupt should occur.
  *  A DMP interrupt can be configured to trigger on either of the two
@@ -1220,7 +1157,7 @@ int dmp_set_interrupt_mode(unsigned char mode)
         {0xd8, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0x09, 0xb4, 0xd9};
     const unsigned char regs_gesture[11] =
         {0xda, 0xb1, 0xb9, 0xf3, 0x8b, 0xa3, 0x91, 0xb6, 0xda, 0xb4, 0xda};
-
+ 
     switch (mode) {
     case DMP_INT_CONTINUOUS:
         return mpu_write_mem(CFG_FIFO_ON_EVENT, 11,
@@ -1232,7 +1169,7 @@ int dmp_set_interrupt_mode(unsigned char mode)
         return -1;
     }
 }
-
+ 
 /**
  *  @brief      Get one packet from the FIFO.
  *  If @e sensors does not contain a particular sensor, disregard the data
@@ -1258,16 +1195,16 @@ int dmp_read_fifo(short *gyro, short *accel, long *quat,
 {
     unsigned char fifo_data[MAX_PACKET_LENGTH];
     unsigned char ii = 0;
-
+ 
     /* TODO: sensors[0] only changes when dmp_enable_feature is called. We can
      * cache this value and save some cycles.
      */
     sensors[0] = 0;
-
+ 
     /* Get a packet. */
     if (mpu_read_fifo_stream(dmp.packet_length, fifo_data, more))
         return -1;
-
+ 
     /* Parse DMP packet. */
     if (dmp.feature_mask & (DMP_FEATURE_LP_QUAT | DMP_FEATURE_6X_LP_QUAT)) {
 #ifdef FIFO_CORRUPTION_CHECK
@@ -1307,7 +1244,7 @@ int dmp_read_fifo(short *gyro, short *accel, long *quat,
         sensors[0] |= INV_WXYZ_QUAT;
 #endif
     }
-
+ 
     if (dmp.feature_mask & DMP_FEATURE_SEND_RAW_ACCEL) {
         accel[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
         accel[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
@@ -1315,7 +1252,7 @@ int dmp_read_fifo(short *gyro, short *accel, long *quat,
         ii += 6;
         sensors[0] |= INV_XYZ_ACCEL;
     }
-
+ 
     if (dmp.feature_mask & DMP_FEATURE_SEND_ANY_GYRO) {
         gyro[0] = ((short)fifo_data[ii+0] << 8) | fifo_data[ii+1];
         gyro[1] = ((short)fifo_data[ii+2] << 8) | fifo_data[ii+3];
@@ -1323,17 +1260,17 @@ int dmp_read_fifo(short *gyro, short *accel, long *quat,
         ii += 6;
         sensors[0] |= INV_XYZ_GYRO;
     }
-
+ 
     /* Gesture data is at the end of the DMP packet. Parse it and call
      * the gesture callbacks (if registered).
      */
     if (dmp.feature_mask & (DMP_FEATURE_TAP | DMP_FEATURE_ANDROID_ORIENT))
         decode_gesture(fifo_data + ii);
-
+ 
     get_ms(timestamp);
     return 0;
 }
-
+ 
 /**
  *  @brief      Register a function to be executed on a tap event.
  *  The tap direction is represented by one of the following:
@@ -1351,7 +1288,7 @@ int dmp_register_tap_cb(void (*func)(unsigned char, unsigned char))
     dmp.tap_cb = func;
     return 0;
 }
-
+ 
 /**
  *  @brief      Register a function to be executed on a android orientation event.
  *  @param[in]  func    Callback function.
@@ -1362,8 +1299,7 @@ int dmp_register_android_orient_cb(void (*func)(unsigned char))
     dmp.android_orient_cb = func;
     return 0;
 }
-
+ 
 /**
  *  @}
  */
-

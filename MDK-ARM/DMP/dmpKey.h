@@ -5,7 +5,7 @@
  */
 #ifndef DMPKEY_H__
 #define DMPKEY_H__
-
+ 
 #define KEY_CFG_25                  (0)
 #define KEY_CFG_24                  (KEY_CFG_25 + 1)
 #define KEY_CFG_26                  (KEY_CFG_24 + 1)
@@ -68,12 +68,12 @@
 #define KEY_FCFG_MAG_VAL            (KEY_CFG_ORIENT_IRQ_3 + 1)
 #define KEY_FCFG_MAG_MOV            (KEY_FCFG_MAG_VAL + 1)
 #define KEY_CFG_LP_QUAT             (KEY_FCFG_MAG_MOV + 1)
-
+ 
 /* MPU6050 keys */
 #define KEY_CFG_ACCEL_FILTER        (KEY_CFG_LP_QUAT + 1)
 #define KEY_CFG_MOTION_BIAS         (KEY_CFG_ACCEL_FILTER + 1)
 #define KEY_TEMPLABEL               (KEY_CFG_MOTION_BIAS + 1)
-
+ 
 #define KEY_D_0_22                  (KEY_TEMPLABEL + 1)
 #define KEY_D_0_24                  (KEY_D_0_22 + 1)
 #define KEY_D_0_36                  (KEY_D_0_24 + 1)
@@ -88,7 +88,7 @@
 #define KEY_D_0_228                 (KEY_D_0_224 + 1)
 #define KEY_D_0_232                 (KEY_D_0_228 + 1)
 #define KEY_D_0_236                 (KEY_D_0_232 + 1)
-
+ 
 #define KEY_DMP_PREVPTAT            (KEY_D_0_236 + 1)
 #define KEY_D_1_2                   (KEY_DMP_PREVPTAT + 1)
 #define KEY_D_1_4                   (KEY_D_1_2 + 1)
@@ -140,7 +140,7 @@
 #define KEY_D_2_244                 (KEY_D_2_224 + 1)
 #define KEY_D_2_248                 (KEY_D_2_244 + 1)
 #define KEY_D_2_252                 (KEY_D_2_248 + 1)
-
+ 
 #define KEY_D_GYRO_BIAS_X               (KEY_D_2_252 + 1)
 #define KEY_D_GYRO_BIAS_Y               (KEY_D_GYRO_BIAS_X + 1)
 #define KEY_D_GYRO_BIAS_Z               (KEY_D_GYRO_BIAS_Y + 1)
@@ -164,7 +164,7 @@
 #define KEY_D_CS_TQ1                    (KEY_D_CS_TQ0 + 1)
 #define KEY_D_CS_TQ2                    (KEY_D_CS_TQ1 + 1)
 #define KEY_D_CS_TQ3                    (KEY_D_CS_TQ2 + 1)
-
+ 
 /* Compass keys */
 #define KEY_CPASS_BIAS_X            (KEY_D_CS_TQ3 + 1)
 #define KEY_CPASS_BIAS_Y            (KEY_CPASS_BIAS_X + 1)
@@ -178,7 +178,7 @@
 #define KEY_CPASS_MTX_20            (KEY_CPASS_MTX_12 + 1)
 #define KEY_CPASS_MTX_21            (KEY_CPASS_MTX_20 + 1)
 #define KEY_CPASS_MTX_22            (KEY_CPASS_MTX_21 + 1)
-
+ 
 /* Gesture Keys */
 #define KEY_DMP_TAPW_MIN            (KEY_CPASS_MTX_22 + 1)
 #define KEY_DMP_TAP_THR_X           (KEY_DMP_TAPW_MIN + 1)
@@ -192,7 +192,7 @@
 #define KEY_D_ACSX                  (KEY_D_ACT0 + 1)
 #define KEY_D_ACSY                  (KEY_D_ACSX + 1)
 #define KEY_D_ACSZ                  (KEY_D_ACSY + 1)
-
+ 
 #define KEY_X_GRT_Y_TMP             (KEY_D_ACSZ + 1)
 #define KEY_SKIP_X_GRT_Y_TMP        (KEY_X_GRT_Y_TMP + 1)
 #define KEY_SKIP_END_COMPARE        (KEY_SKIP_X_GRT_Y_TMP + 1)
@@ -207,13 +207,13 @@
 #define KEY_NOT_TIME_MINUS_1        (KEY_X_GRT_Y + 1)       
 #define KEY_END_COMPARE_Y_X_TMP3    (KEY_NOT_TIME_MINUS_1 + 1) 
 #define KEY_X_GRT_Y_TMP2            (KEY_END_COMPARE_Y_X_TMP3 + 1)
-
+ 
 /* Authenticate Keys */
 #define KEY_D_AUTH_OUT              (KEY_X_GRT_Y_TMP2 + 1)
 #define KEY_D_AUTH_IN               (KEY_D_AUTH_OUT + 1)
 #define KEY_D_AUTH_A                (KEY_D_AUTH_IN + 1)
 #define KEY_D_AUTH_B                (KEY_D_AUTH_A + 1)
-
+ 
 /* Pedometer standalone only keys */
 #define KEY_D_PEDSTD_BP_B           (KEY_D_AUTH_B + 1)
 #define KEY_D_PEDSTD_HP_A           (KEY_D_PEDSTD_BP_B + 1)
@@ -234,10 +234,10 @@
 #define KEY_D_PEDSTD_STEPCTR        (KEY_D_PEDSTD_TIMECTR + 1)
 #define KEY_D_PEDSTD_WALKTIME       (KEY_D_PEDSTD_STEPCTR + 1)
 #define KEY_D_PEDSTD_DECI           (KEY_D_PEDSTD_WALKTIME + 1)
-
+ 
 /*Host Based No Motion*/
 #define KEY_D_HOST_NO_MOT           (KEY_D_PEDSTD_DECI + 1)
-
+ 
 /* EIS keys */
 #define KEY_P_EIS_FIFO_FOOTER       (KEY_D_HOST_NO_MOT + 1)
 #define KEY_P_EIS_FIFO_YSHIFT       (KEY_P_EIS_FIFO_FOOTER + 1)
@@ -268,7 +268,7 @@
 //#define KEY_DMP_HPX_H               (KEY_DMP_INTZ_H + 1)
 //#define KEY_DMP_HPY_H               (KEY_DMP_HPX_H + 1)
 //#define KEY_DMP_HPZ_H               (KEY_DMP_HPY_H + 1)
-
+ 
 /* Stream keys */
 #define KEY_STREAM_P_GYRO_Z         (KEY_DMP_INTZ_H + 1)
 #define KEY_STREAM_P_GYRO_Y         (KEY_STREAM_P_GYRO_Z + 1)
@@ -281,19 +281,19 @@
 #define KEY_STREAM_P_ACCEL_X        (KEY_STREAM_P_ACCEL_Y + 1)
 #define KEY_STREAM_P_FOOTER         (KEY_STREAM_P_ACCEL_X + 1)
 #define KEY_STREAM_P_ACCEL_Z        (KEY_STREAM_P_FOOTER + 1)
-
+ 
 #define NUM_KEYS                    (KEY_STREAM_P_ACCEL_Z + 1)
-
+ 
 typedef struct {
     unsigned short key;
     unsigned short addr;
 } tKeyLabel;
-
+ 
 #define DINA0A 0x0a
 #define DINA22 0x22
 #define DINA42 0x42
 #define DINA5A 0x5a
-
+ 
 #define DINA06 0x06
 #define DINA0E 0x0e
 #define DINA16 0x16
@@ -310,7 +310,7 @@ typedef struct {
 #define DINA6E 0x6e
 #define DINA76 0x76
 #define DINA7E 0x7e
-
+ 
 #define DINA00 0x00
 #define DINA08 0x08
 #define DINA10 0x10
@@ -327,7 +327,7 @@ typedef struct {
 #define DINA68 0x68
 #define DINA70 0x70
 #define DINA78 0x78
-
+ 
 #define DINA04 0x04
 #define DINA0C 0x0c
 #define DINA14 0x14
@@ -344,7 +344,7 @@ typedef struct {
 #define DINA6C 0x6c
 #define DINA74 0x74
 #define DINA7C 0x7c
-
+ 
 #define DINA01 0x01
 #define DINA09 0x09
 #define DINA11 0x11
@@ -361,7 +361,7 @@ typedef struct {
 #define DINA69 0x69
 #define DINA71 0x71
 #define DINA79 0x79
-
+ 
 #define DINA25 0x25
 #define DINA2D 0x2d
 #define DINA35 0x35
@@ -372,7 +372,7 @@ typedef struct {
 #define DINA6D 0x6d
 #define DINA75 0x75
 #define DINA7D 0x7d
-
+ 
 #define DINADC 0xdc
 #define DINAF2 0xf2
 #define DINAAB 0xab
@@ -388,8 +388,8 @@ typedef struct {
 #define DINA91 0x91
 #define DINAB6 0xb6
 #define DINAB4 0xb4
-
-
+ 
+ 
 #define DINC00 0x00
 #define DINC01 0x01
 #define DINC02 0x02
@@ -406,7 +406,7 @@ typedef struct {
 #define DINC19 0x19
 #define DINC1A 0x1a
 #define DINC1B 0x1b
-
+ 
 #define DINC20 0x20
 #define DINC21 0x21
 #define DINC22 0x22
@@ -423,7 +423,7 @@ typedef struct {
 #define DINC39 0x39
 #define DINC3A 0x3a
 #define DINC3B 0x3b
-
+ 
 #define DINC40 0x40
 #define DINC41 0x41
 #define DINC42 0x42
@@ -440,7 +440,7 @@ typedef struct {
 #define DINC59 0x59
 #define DINC5A 0x5a
 #define DINC5B 0x5b
-
+ 
 #define DINC60 0x60
 #define DINC61 0x61
 #define DINC62 0x62
@@ -457,10 +457,10 @@ typedef struct {
 #define DINC79 0x79
 #define DINC7A 0x7a
 #define DINC7B 0x7b
-
+ 
 #define DIND40 0x40
-
-
+ 
+ 
 #define DINA80 0x80
 #define DINA90 0x90
 #define DINAA0 0xa0
@@ -476,7 +476,7 @@ typedef struct {
 #define DINADD 0xdd
 #define DINAF8 0xf0
 #define DINAFE 0xfe
-
+ 
 #define DINBF8 0xf8
 #define DINAC0 0xb0
 #define DINAC1 0xb1
@@ -488,7 +488,7 @@ typedef struct {
 #define DINBC2 0xc2
 #define DINBC4 0xc4
 #define DINBC6 0xc6
-
-
-
+ 
+ 
+ 
 #endif // DMPKEY_H__
