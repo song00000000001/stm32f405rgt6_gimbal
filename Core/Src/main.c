@@ -200,7 +200,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 			//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
 			static uint8_t pwm_counter = 0;
-			if (pwm_counter < led_brightness) {
+			if (pwm_counter < g_led_brightness) {
 					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
 			}
 			else {

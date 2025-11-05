@@ -1,38 +1,45 @@
 #include "breathing_led.h"
 
-volatile uint16_t led_brightness = 0;
+volatile uint16_t g_led_brightness = 0;
 
-void led_set_brightness(uint8_t x)//范围应该是1~5
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "cmsis_os.h"
+
+extern osMessageQId led_control_queueHandle;
+
+void led_breath(void const * argument)
 {
-	if(x>100)
-		x=100;	
-	led_brightness  =   x   ;
+  /* USER CODE BEGIN led_breath */
+	static uint32_t breath_period_ms = 1; 
+	// 默认步长周期 1ms，乘以200/step=50后呼吸周期为50ms。20hz
+	uint32_t new_period_from_queue;
+	uint8_t brightness = 0;
+	int8_t step = 4;
+  /* Infinite loop */
+  for(;;)
+  {
+		// 1. 非阻塞地检查是否有新的周期设置
+        if (xQueueReceive(led_control_queueHandle, &new_period_from_queue, 0) == pdPASS)
+        {
+            if (new_period_from_queue > 0 && new_period_from_queue < 200)
+            {
+                breath_period_ms = new_period_from_queue; // 更新内部状态
+            }
+        }
+
+        // 2. 更新亮度
+        brightness += step;
+        if (brightness >= 100) step = -4;
+        if (brightness <= 0)   step = 4;
+        
+        // 3. 更新全局亮度变量 (供PWM中断使用)
+        // 这个赋值是原子的，所以不需要互斥锁
+        g_led_brightness = brightness; 
+
+        // 4. 根据当前周期延时
+        vTaskDelay(pdMS_TO_TICKS(breath_period_ms));
+ 
+  }
+  /* USER CODE END led_breath */
 }
-
-volatile uint16_t led_breath_freq=20; 
-
-uint8_t led_breath(uint8_t f){
-	static uint8_t led_breath_flag =1;
-	
-	if(f==0){
-		led_brightness=100;
-		return 100;
-	}
-	
-	//f=1hz,则需要延时1s=1000ms,
-	//f_max=255,延时~=4ms
-	uint8_t t=1000/f;
-
-	if(led_brightness>99){
-		led_brightness=-1;
-	}
-	else if(led_brightness==0)
-	{
-		led_brightness=1;
-	}
-	
-	led_brightness+=led_breath_flag;
-	
-	return f;
-}
-
