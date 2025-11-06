@@ -13,6 +13,7 @@ extern uint8_t  test_buf[];//串口发送测试字符串
 void ble_Init(void);
 void ble_print(uint8_t* buf,uint16_t len);
 void vofa_send(int num, ...);
+void my_printf(const char *format, ...);
 //struct pid_inc;  
 //struct pid_pos;
 

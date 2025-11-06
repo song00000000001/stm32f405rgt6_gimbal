@@ -2,13 +2,14 @@
 #include "string.h"
 #include "breathing_led.h"
 #include "pid.h"
+#include "stdio.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "cmsis_os.h"
 
 uint8_t  ble_rx_buffer[ble_rx_buffer_size];//串口接收缓冲区
-uint8_t  ble_txBuffer[64];//串口发送缓冲区
+uint8_t  ble_txBuffer[256];//串口发送缓冲区
 extern osMessageQId ble_rx_queueHandle,led_control_queueHandle;
 
 void ble_send(void const * argument);
@@ -16,11 +17,13 @@ void ble_receive_handle(uint8_t *buf,float * f);
 
 void ble_Init(void)
 {
+	my_printf("start_uart\n");
 	if (HAL_UART_Receive_DMA(ble_uart, ble_rx_buffer, ble_rx_buffer_size) != HAL_OK)//手动打开第一次串口接收,并**同时**检查状态。第二次会返回busy。
-	{
-		// 错误处理
-		Error_Handler();
-	}
+  {
+    // 错误处理
+		my_printf("uart1_error\n");
+    Error_Handler();
+  }
 }
 
 
@@ -124,10 +127,13 @@ void ble_receive_handle(uint8_t *buf,float * f)
 }
 
 
+
 void ble_print(uint8_t* buf,uint16_t len)
 {
-	HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
+	//HAL_UART_Transmit(ble_uart,(uint8_t *) buf, len, 100);
+	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
 }
+
 
 //约定发送字符串格式如下
 //"St+1000.0000E"
@@ -204,4 +210,22 @@ void vofa_send(int num, ...) {
     ble_txBuffer[tail + 3] = 0x7F;
 
     ble_print((uint8_t*)ble_txBuffer, tail + 4);
+}
+
+#define BLE_TX_BUF_LEN  256     /* 发送缓冲区容量，根据需要进行调整 */
+uint8_t BLE_TxBuf[BLE_TX_BUF_LEN];  /* 发送缓冲区*/
+
+void my_printf(const char *format, ...)
+{
+    char buf[BLE_TX_BUF_LEN];
+    va_list args;
+    va_start(args, format);
+
+    int len = vsnprintf(buf, BLE_TX_BUF_LEN, format, args);
+    if (len > 0 && len < BLE_TX_BUF_LEN)
+    {
+      ble_print((uint8_t *)buf,len);
+    }
+
+    va_end(args);
 }
