@@ -12,7 +12,7 @@
 uint8_t MPU_Init(void)
 { 
 	uint8_t res;
-	extern I2C_HandleTypeDef hi2c1;
+	extern I2C_HandleTypeDef hi2c1;  
 	HAL_I2C_Init(&hi2c1);
 	MPU_Write_Byte(MPU_PWR_MGMT1_REG,0X80);	//复位MPU6050
 	HAL_Delay (100);
