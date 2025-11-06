@@ -66,7 +66,7 @@ void ble_receive(void const * argument)
   for(;;)
   {
 	  
-	// 阻塞等待，直到uartRxQueue中有数据	
+	// 阻塞等待，直到ble_rx_queueHandle中有数据	
 	if (xQueueReceive(ble_rx_queueHandle, local_rx_buffer, portMAX_DELAY) == pdPASS)
 	{
 		float led_freq=1;

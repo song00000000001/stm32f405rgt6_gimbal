@@ -113,8 +113,7 @@ int main(void)
 	//3.mpu
 	MPU_Init();
 	//4.can
-	//can_user_init(&hcan1);
-	CAN_Filter_Init_AcceptAll();
+	can_user_init(&hcan1);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
