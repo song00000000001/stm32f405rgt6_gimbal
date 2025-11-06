@@ -1,7 +1,17 @@
 #ifndef __MPU6050_H
 #define __MPU6050_H
 #include "IIC.h"
- 
+
+typedef struct mpu6050_raw
+{
+	/* data */
+	short ax;
+	short ay;
+	short az;
+	short gx;
+	short gy;
+	short gz;
+}mpu6050_raw;
  
 #define delay_ms				HAL_Delay
 #define MPU_IIC_Init			IIC_GPIO_Init
@@ -70,14 +80,14 @@
 #define MPU_I2CSLV3_DO_REG		0X66	//IIC从机3数据寄存器
  
 #define MPU_I2CMST_DELAY_REG		0X67	//IIC主机延时管理寄存器
-#define MPU_SIGPATH_RST_REG		0X68	//信号通道复位寄存器
+#define MPU_SIGPATH_RST_REG		    0X68	//信号通道复位寄存器
 #define MPU_MDETECT_CTRL_REG		0X69	//运动检测控制寄存器
 #define MPU_USER_CTRL_REG			0X6A	//用户控制寄存器
 #define MPU_PWR_MGMT1_REG			0X6B	//电源管理寄存器1
 #define MPU_PWR_MGMT2_REG			0X6C	//电源管理寄存器2 
 #define MPU_FIFO_CNTH_REG			0X72	//FIFO计数寄存器高八位
 #define MPU_FIFO_CNTL_REG			0X73	//FIFO计数寄存器低八位
-#define MPU_FIFO_RW_REG			0X74	//FIFO读写寄存器
+#define MPU_FIFO_RW_REG			    0X74	//FIFO读写寄存器
 #define MPU_DEVICE_ID_REG			0X75	//器件ID寄存器
  
 //如果AD0脚(9脚)接地,IIC地址为0X68(不包含最低位).
@@ -86,8 +96,8 @@
  
  
 ////因为模块AD0默认接GND,所以转为读写地址后,为0XD1和0XD0(如果接VCC,则为0XD3和0XD2)
-//#define MPU_READ    0XD1
-//#define MPU_WRITE   0XD0
+#define MPU_READ    0XD1
+#define MPU_WRITE   0XD0
  
 uint8_t MPU_Init(void); 								//初始化MPU6050
 uint8_t MPU_Write_Len(uint8_t addr,uint8_t reg,uint8_t len,uint8_t *buf);//IIC连续写

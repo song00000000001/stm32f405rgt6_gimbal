@@ -222,3 +222,46 @@ uint8_t MPU_Read_Byte(uint8_t reg)
     MPU_IIC_Stop();			//产生一个停止条件
     return res;
 }
+
+
+
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "cmsis_os.h"
+#include "task.h"
+#include "FreeRTOSConfig.h"
+#include "ble.h"
+
+void mpu6050_read(void const * argument)
+{
+	/* USER CODE BEGIN mpu6050_read */
+	/* Infinite loop */
+	uint8_t mpu_buf[6],res;
+	mpu6050_raw mpu6050_raw_data;
+	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
+    const TickType_t xFrequency = pdMS_TO_TICKS(20); // 20ms
+        
+	for(;;)
+	{
+		// 1. 使用vTaskDelayUntil实现精准的周期性延时
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		//#define MPU_READ    0XD1
+		//#define MPU_WRITE   0XD0
+		res=MPU_Read_Len(MPU_READ,MPU_ACCEL_XOUTH_REG,6,mpu_buf);
+		if(res==0)
+		{
+			mpu6050_raw_data.ax=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
+			mpu6050_raw_data.ay=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
+			mpu6050_raw_data.az=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
+		} 	
+		res=MPU_Read_Len(MPU_READ,MPU_GYRO_XOUTH_REG,6,mpu_buf);
+		if(res==0)
+		{
+			mpu6050_raw_data.gx=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
+			mpu6050_raw_data.gy=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
+			mpu6050_raw_data.gz=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
+		} 	
+		vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
+	}
+  /* USER CODE END mpu6050_read */
+}
