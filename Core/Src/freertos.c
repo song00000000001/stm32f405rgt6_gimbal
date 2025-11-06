@@ -135,19 +135,19 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of breathing_led_t */
-  osThreadDef(breathing_led_t, led_breath, osPriorityBelowNormal, 0, 128);
+  osThreadDef(breathing_led_t, led_breath, osPriorityNormal, 0, 128);
   breathing_led_tHandle = osThreadCreate(osThread(breathing_led_t), NULL);
 
   /* definition and creation of serial_tx_task */
-  osThreadDef(serial_tx_task, ble_send, osPriorityLow, 0, 128);
+  osThreadDef(serial_tx_task, ble_send, osPriorityIdle, 0, 128);
   serial_tx_taskHandle = osThreadCreate(osThread(serial_tx_task), NULL);
 
   /* definition and creation of cmdparse_task */
-  osThreadDef(cmdparse_task, ble_receive, osPriorityNormal, 0, 128);
+  osThreadDef(cmdparse_task, ble_receive, osPriorityAboveNormal, 0, 128);
   cmdparse_taskHandle = osThreadCreate(osThread(cmdparse_task), NULL);
 
   /* definition and creation of mpu6050_read_ta */
@@ -155,11 +155,11 @@ void MX_FREERTOS_Init(void) {
   mpu6050_read_taHandle = osThreadCreate(osThread(mpu6050_read_ta), NULL);
 
   /* definition and creation of can1_rx_task */
-  osThreadDef(can1_rx_task, can1_rx, osPriorityAboveNormal, 0, 128);
+  osThreadDef(can1_rx_task, can1_rx, osPriorityHigh, 0, 128);
   can1_rx_taskHandle = osThreadCreate(osThread(can1_rx_task), NULL);
 
   /* definition and creation of can1_tx_task */
-  osThreadDef(can1_tx_task, can1_tx, osPriorityNormal, 0, 128);
+  osThreadDef(can1_tx_task, can1_tx, osPriorityIdle, 0, 128);
   can1_tx_taskHandle = osThreadCreate(osThread(can1_tx_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

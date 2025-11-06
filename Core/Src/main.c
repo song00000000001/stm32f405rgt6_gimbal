@@ -33,6 +33,7 @@
 #include "breathing_led.h"
 #include "mpu6050.h"
 #include "bsp_can.h"
+#include "inv_mpu.h"
 
 #include <stdbool.h>
 /* USER CODE END Includes */
@@ -62,7 +63,7 @@
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-
+extern void user_delaynus_tim(uint16_t nus);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -103,15 +104,25 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM5_Init();
   MX_CAN1_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
 	ble_Init();	
 	//2.pwm
 	HAL_TIM_Base_Start_IT(&htim5);
+	
 	//3.mpu
-	MPU_Init();
+	//MPU_Init();
+	mpu_dmp_init();
 	//4.can
 	can_user_init(&hcan1);
+	/*float pitch,roll,yaw;
+	while(1){
+		mpu_dmp_get_data(&pitch,&roll,&yaw);
+		vofa_send(3,(float)pitch,(float)roll,(float)yaw);
+		HAL_Delay(50);
+		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
+	}*/
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

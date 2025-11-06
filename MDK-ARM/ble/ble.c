@@ -52,7 +52,7 @@ void ble_send(void const * argument)
   for(;;)
   {			
 		//vofa_send(1,(float)g_led_brightness);
-		osDelay(10);
+		osDelay(1000);
   }
   /* USER CODE END ble_send */
 }
@@ -80,6 +80,7 @@ void ble_receive(void const * argument)
 		xQueueSend(led_control_queueHandle, &new_period, 0); 
 	}
 
+	osDelay(5);
   }
   /* USER CODE END ble_receive */
 }

@@ -231,15 +231,18 @@ uint8_t MPU_Read_Byte(uint8_t reg)
 #include "task.h"
 #include "FreeRTOSConfig.h"
 #include "ble.h"
+#include "inv_mpu.h"
 
 void mpu6050_read(void const * argument)
 {
 	/* USER CODE BEGIN mpu6050_read */
 	/* Infinite loop */
-	uint8_t mpu_buf[6],res;
-	mpu6050_raw mpu6050_raw_data;
+	//uint8_t mpu_buf[6],res;
+    float pitch,roll,yaw;
+    short ax,ay,az,gx,gy,gz;
+	//mpu6050_raw mpu6050_raw_data;
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(20); // 20ms
+    const TickType_t xFrequency = pdMS_TO_TICKS(20); 
         
 	for(;;)
 	{
@@ -247,6 +250,7 @@ void mpu6050_read(void const * argument)
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		//#define MPU_READ    0XD1
 		//#define MPU_WRITE   0XD0
+        /*
 		res=MPU_Read_Len(MPU_READ,MPU_ACCEL_XOUTH_REG,6,mpu_buf);
 		if(res==0)
 		{
@@ -261,7 +265,16 @@ void mpu6050_read(void const * argument)
 			mpu6050_raw_data.gy=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
 			mpu6050_raw_data.gz=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
 		} 	
-		//vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
+        */
+#if 1
+        MPU_Get_Accelerometer(&ax,&ay,&az);
+        MPU_Get_Gyroscope(&gx,&gy,&gz);
+        vofa_send(2,(float)ax,(float)gx);
+#else
+		mpu_dmp_get_data(&pitch,&roll,&yaw);
+		vofa_send(3,(float)pitch,(float)roll,(float)yaw);
+#endif        
+		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
 	}
   /* USER CODE END mpu6050_read */
 }

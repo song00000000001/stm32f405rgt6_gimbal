@@ -48,13 +48,13 @@ void can1_rx(void const * argument){
 			set_motor_voltage( 0, (int16_t)pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle),0,0,0);		
 			#if 0	
 				vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
-			#elif 1
+			#elif 0
 				vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
 			#endif	
 			can_rx_flag=0;
 		}
 
-		//osDelay(100);
+		//osDelay(1);
   }
   /* USER CODE END can1_rx */
 }
@@ -69,7 +69,7 @@ void can1_tx(void const * argument)
 		#elif 0
 			vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
 		#endif	
-		osDelay(2);
+		osDelay(1000);
     }
   /* USER CODE END can1_tx */
 }
