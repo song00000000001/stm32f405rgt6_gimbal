@@ -4,6 +4,7 @@
 #include "queue.h"
 #include "cmsis_os.h"
 #include "ble.h"
+#include "pid.h"
 
 extern osMessageQId can_rx_queueHandle;
 
@@ -16,29 +17,44 @@ void can1_rx(void const * argument){
 
   /* USER CODE BEGIN can1_rx */
   moto_info_t motor_info_0[MOTOR_MAX_NUM];
- 
+  TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
+  const TickType_t xFrequency = pdMS_TO_TICKS(2); // 
+  static uint16_t pid_counter=0;
   /* Infinite loop */
   for(;;)
   {
-    if(can_rx_flag){
-      can_read_flag=1;
-      motor_info_0[0].dlc=motor_info[0].dlc; 
-      motor_info_0[0].id=motor_info[0].id;
-      motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;
-      motor_info_0[0].rotor_speed=motor_info[0].rotor_speed;
-      motor_info_0[0].temp=motor_info[0].temp;
-      motor_info_0[0].torque_current=motor_info[0].torque_current;
-      can_read_flag=0;
-      //vofa_send(4,(float),(float),(float),(float));
-      #if 1
-      my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
-		    motor_info_0[0].id,motor_info_0[0].dlc,motor_info_0[0].rotor_angle,
-        motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
-      can_rx_flag=0;
-      #endif
-    }
+		// 1. 使用vTaskDelayUntil实现精准的周期性延时
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-    osDelay(100);
+		if(can_rx_flag){
+			can_read_flag=1;     //互斥锁
+			// motor_info_0[0].dlc=motor_info[0].dlc; 
+			// motor_info_0[0].id=motor_info[0].id;
+			motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;
+			motor_info_0[0].rotor_speed=motor_info[0].rotor_speed;
+			// motor_info_0[0].temp=motor_info[0].temp;
+			// motor_info_0[0].torque_current=motor_info[0].torque_current;
+			can_read_flag=0;
+			#if 0
+			my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
+				motor_info_0[0].id,motor_info_0[0].dlc,motor_info_0[0].rotor_angle,
+			motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
+			#endif
+			pid_counter++;
+			if(pid_counter>=10){
+				pid_counter=0;
+				pid_angle_task();
+			}
+			set_motor_voltage( 0, (int16_t)pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle),0,0,0);		
+			#if 0	
+				vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
+			#elif 1
+				vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
+			#endif	
+			can_rx_flag=0;
+		}
+
+		//osDelay(100);
   }
   /* USER CODE END can1_rx */
 }
@@ -48,8 +64,12 @@ void can1_tx(void const * argument)
     for (;;)
     {
       // 发送CAN报文
-	    set_motor_voltage( 0, 1000,0,0,0);
-      osDelay(10);
+		#if 0	
+			vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
+		#elif 0
+			vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
+		#endif	
+		osDelay(2);
     }
   /* USER CODE END can1_tx */
 }

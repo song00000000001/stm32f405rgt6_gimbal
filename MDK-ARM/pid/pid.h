@@ -4,6 +4,7 @@
 #include "main.h"
 //#include "tim.h"
 #include <stdbool.h>
+#define pid_debug_pos_inc 1
 
 typedef struct pid_pos
 {
@@ -16,17 +17,33 @@ typedef struct pid_pos
 	float integral;
 	float integral_max;
 
-	float last_err;
+	float last_error;
 	float output;
 	float output_max;
 }pid_pos;
 
+typedef struct pid_inc
+{
+	float Kp,Ki,Kd;
+
+	float target;
+	float now;
+
+	float last_error;
+	float output;
+	float output_max;
+
+}pid_inc;
+
 //#define PID_TIM &htim1
 
 extern pid_pos pid_angle;
-extern volatile bool ANGLE_PID;
+extern pid_inc pid_speed;
 
-void pid_init(void);
+void pid_init();
 float pid_cal_pos(pid_pos *pid);
-void pid_task(void);
+float pid_cal_inc(pid_inc *pid);
+float pid_speed_task(int16_t speed,int16_t angle);
+void pid_angle_task();
+
 #endif

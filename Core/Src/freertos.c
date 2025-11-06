@@ -155,7 +155,7 @@ void MX_FREERTOS_Init(void) {
   mpu6050_read_taHandle = osThreadCreate(osThread(mpu6050_read_ta), NULL);
 
   /* definition and creation of can1_rx_task */
-  osThreadDef(can1_rx_task, can1_rx, osPriorityNormal, 0, 128);
+  osThreadDef(can1_rx_task, can1_rx, osPriorityAboveNormal, 0, 128);
   can1_rx_taskHandle = osThreadCreate(osThread(can1_rx_task), NULL);
 
   /* definition and creation of can1_tx_task */
@@ -181,7 +181,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
   }
   /* USER CODE END StartDefaultTask */
 }

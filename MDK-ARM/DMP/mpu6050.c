@@ -261,7 +261,7 @@ void mpu6050_read(void const * argument)
 			mpu6050_raw_data.gy=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
 			mpu6050_raw_data.gz=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
 		} 	
-		vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
+		//vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
 	}
   /* USER CODE END mpu6050_read */
 }

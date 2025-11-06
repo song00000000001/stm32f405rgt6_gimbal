@@ -112,30 +112,6 @@ int main(void)
 	MPU_Init();
 	//4.can
 	can_user_init(&hcan1);
-  uint8_t mpu_buf[6],res;
-	mpu6050_raw mpu6050_raw_data;
-  for(;;)
-	{
-		//#define MPU_READ    0XD1
-		//#define MPU_WRITE   0XD0
-		res=MPU_Read_Len(MPU_READ,MPU_ACCEL_XOUTH_REG,6,mpu_buf);
-		if(res==0)
-		{
-			mpu6050_raw_data.ax=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
-			mpu6050_raw_data.ay=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
-			mpu6050_raw_data.az=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
-		} 	
-		res=MPU_Read_Len(MPU_READ,MPU_GYRO_XOUTH_REG,6,mpu_buf);
-		if(res==0)
-		{
-			mpu6050_raw_data.gx=((uint16_t)mpu_buf[0]<<8)|mpu_buf[1];  
-			mpu6050_raw_data.gy=((uint16_t)mpu_buf[2]<<8)|mpu_buf[3];  
-			mpu6050_raw_data.gz=((uint16_t)mpu_buf[4]<<8)|mpu_buf[5];
-		} 	
-		vofa_send(2,(float)mpu6050_raw_data.ax,(float)mpu6050_raw_data.gx);
-
-    HAL_Delay(20);
-	}
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -180,7 +156,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 144;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -194,10 +170,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }

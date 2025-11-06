@@ -86,7 +86,11 @@ void ble_receive(void const * argument)
 
 void ble_receive_handle(uint8_t *buf,float * f)
 {
-	
+	#if 0
+	pid_inc *pid=&pid_speed;
+	#else
+	 pid_pos *pid=&pid_angle;
+	#endif
 	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
 		return;
@@ -116,9 +120,21 @@ void ble_receive_handle(uint8_t *buf,float * f)
 		
 		switch(buf[1])
 		{
+			case 'p':
+            	pid->Kp = val;
+				break;
+			case 'i':
+				pid->Ki = val;
+				break;
+			case 'd':
+				pid->Kd = val;
+				break;
+			case 't':
+				pid->target = val;
+				break;
 			case 'L':
-					*f=val;
-					break;
+				*f=val;
+				break;
 			default:
 					break;
 		}
@@ -130,8 +146,8 @@ void ble_receive_handle(uint8_t *buf,float * f)
 
 void ble_print(uint8_t* buf,uint16_t len)
 {
-	//HAL_UART_Transmit(ble_uart,(uint8_t *) buf, len, 100);
-	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
+	HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
+	//HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
 }
 
 
