@@ -1,0 +1,30 @@
+#ifndef __BSP_CAN
+#define __BSP_CAN
+
+#include "can.h"
+
+#define FEEDBACK_ID_BASE      0x205
+#define CAN_CONTROL_ID_BASE   0x1ff
+#define CAN_CONTROL_ID_EXTEND 0x2ff
+#define MOTOR_MAX_NUM         1
+#define LED_GREEN_TOGGLE()  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14)
+
+#define CAN_RxExtId 0x1800D8D0
+#define CAN_TxExtId 0x1800D0D8
+
+
+typedef struct
+{
+    uint8_t id;  
+    uint8_t  dlc;// 数据长度码  
+    uint8_t  temp;  
+    uint16_t rotor_angle;
+    int16_t  rotor_speed;
+    int16_t  torque_current;
+}moto_info_t;//3+2*3=9
+
+void can_user_init(CAN_HandleTypeDef* hcan);
+void CAN_Filter_Init_AcceptAll(void);
+uint8_t CAN_Send_Msg(uint8_t* msg,uint8_t len);
+_Bool set_motor_voltage(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4);
+#endif
