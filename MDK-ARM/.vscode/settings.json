@@ -1,3 +1,10 @@
 {
-    "C_Cpp.errorSquiggles": "enabled"
+    "C_Cpp.errorSquiggles": "enabled",
+    "files.associations": {
+        "chrono": "c",
+        "variant": "c",
+        "ranges": "c",
+        "random": "c",
+        "queue.h": "c"
+    }
 }
