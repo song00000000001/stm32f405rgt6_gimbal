@@ -7,24 +7,19 @@
 
 extern osMessageQId can_rx_queueHandle;
 
-moto_info_t motor_info[MOTOR_MAX_NUM];
-
 //数据接收数组
 uint16_t can_cnt;
-uint8_t can_rx_flag=0;
 
-CAN_RxHeaderTypeDef rx_header;
-uint8_t             rx_data[8];
-  
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
- 
+  CAN_RxHeaderTypeDef rx_header;
+  uint8_t             rx_data[8];
+  moto_info_t motor_info[MOTOR_MAX_NUM];
 
   if (hcan->Instance == CAN1)
   {
 		HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx_header, rx_data);
 		//my_printf("Message received Successfully!\r\n");
-		//my_printf((char*)rx_data);
   }
   if ((rx_header.StdId >= FEEDBACK_ID_BASE)
    && (rx_header.StdId <  FEEDBACK_ID_BASE + MOTOR_MAX_NUM))                  // judge the can id
@@ -38,7 +33,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     motor_info[index].torque_current = ((rx_data[4] << 8) | rx_data[5]);
     motor_info[index].temp           =   rx_data[6];
     
-    can_rx_flag=1;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    // 将消息发送到队列。使用FromISR版本
+    xQueueSendFromISR(can_rx_queueHandle, &motor_info[0], &xHigherPriorityTaskWoken);
+    // 如果发送操作唤醒了一个更高优先级的任务，则在中断退出时进行一次任务切换
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
   }
   if (can_cnt == 1000)
   {
@@ -51,26 +51,24 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 void can1_rx(void const * argument){
 
   /* USER CODE BEGIN can1_rx */
-  moto_info_t motor_info_0[MOTOR_MAX_NUM];
- 
+  moto_info_t local_motor_info[MOTOR_MAX_NUM];
   /* Infinite loop */
   for(;;)
   {
-    if(can_rx_flag){
-      motor_info_0[0].dlc=motor_info[0].dlc; 
-      motor_info_0[0].id=motor_info[0].id;
-      motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;
-      motor_info_0[0].rotor_speed=motor_info[0].rotor_speed;
-      motor_info_0[0].temp=motor_info[0].temp;
-      motor_info_0[0].torque_current=motor_info[0].torque_current;
-      //vofa_send(4,(float),(float),(float),(float));
+    // 阻塞等待，直到can_rx_queueHandle中有数据
+    if(xQueueReceive(can_rx_queueHandle,local_motor_info,portMAX_DELAY)){
+    
+      #if 1
+      vofa_send(2,(float)local_motor_info[0].rotor_angle,(float)local_motor_info[0].rotor_speed);
+	  //vofa_send(3,(float)local_motor_info[0].rotor_angle,(float)local_motor_info[0].rotor_speed,(float)local_motor_info[0].torque_current);
+      #else
       my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
-		motor_info_0[0].id,motor_info_0[0].dlc,motor_info_0[0].rotor_angle,
-        motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
-      can_rx_flag=0;
+		    local_motor_info[0].id          ,local_motor_info[0].dlc,
+        local_motor_info[0].rotor_angle ,local_motor_info[0].rotor_speed,
+        local_motor_info[0].temp        ,local_motor_info[0].torque_current);
+      #endif
     }
-
-    osDelay(100);
+    osDelay(10);
   }
   /* USER CODE END can1_rx */
 }
@@ -80,46 +78,12 @@ void can1_tx(void const * argument)
     for (;;)
     {
       // 发送CAN报文
-	  set_motor_voltage( 0, 20000,0,0,0);
+	  set_motor_voltage( 0, 1000,0,0,0);
       // 任务延时，比如每500ms发送一次
-      osDelay(100);
+      osDelay(10);
     }
   /* USER CODE END can1_tx */
 }
-
-
-
-/*CAN发送数据，入口参数为要发送的数组指针，数据长度，返回0代表发送数据无异常，返回1代表传输异常*/
-uint8_t CAN_Send_Msg(uint8_t* msg,uint8_t len)
-{	
-	CAN_TxHeaderTypeDef	TxHeader;      //发送
-
-	uint8_t i=0;
-	uint32_t TxMailbox;
-	uint8_t message[8];
- 
-	TxHeader.StdId = 0x2ff;
-	TxHeader.IDE   = CAN_ID_STD;
-	TxHeader.RTR=CAN_RTR_DATA;  //数据帧
-	TxHeader.DLC=len;    
-	
-  for(i=0;i<len;i++)
-  {
-		message[i]=msg[i];
-	}
-	
-  if(HAL_CAN_AddTxMessage(&hcan1, &TxHeader, message, &TxMailbox) != HAL_OK)//发送
-	{
-		return 1;
-	}
-	//while(HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) != 3) {}
-    return 0;
-}
-
-/**
-  * @param  id_range to select can control id 0x1ff or 0x2ff
-  * @param  motor voltage 1,2,3,4 or 5,6,7
-  */
  
 _Bool set_motor_voltage(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4)
 {
