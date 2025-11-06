@@ -114,7 +114,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* definition and creation of led_control_queue */
-  osMessageQDef(led_control_queue, 4, uint16_t);
+  osMessageQDef(led_control_queue, 5, 2);
   led_control_queueHandle = osMessageCreate(osMessageQ(led_control_queue), NULL);
 
   /* definition and creation of ble_rx_queue */
@@ -126,7 +126,7 @@ void MX_FREERTOS_Init(void) {
   mpu_data_queueHandle = osMessageCreate(osMessageQ(mpu_data_queue), NULL);
 
   /* definition and creation of can_rx_queue */
-  osMessageQDef(can_rx_queue, 4, 36);
+  osMessageQDef(can_rx_queue, 5, 9);
   can_rx_queueHandle = osMessageCreate(osMessageQ(can_rx_queue), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */

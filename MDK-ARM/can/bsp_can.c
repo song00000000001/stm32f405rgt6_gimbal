@@ -30,10 +30,12 @@ void can1_rx(void const * argument){
       motor_info_0[0].torque_current=motor_info[0].torque_current;
       can_read_flag=0;
       //vofa_send(4,(float),(float),(float),(float));
+      #if 1
       my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
 		    motor_info_0[0].id,motor_info_0[0].dlc,motor_info_0[0].rotor_angle,
         motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
       can_rx_flag=0;
+      #endif
     }
 
     osDelay(100);
