@@ -50,7 +50,7 @@ static void IIC_Delay(void)
  
     IAR工程编译效率高，不能设置为7
     */
-    for (i = 0; i < 23; i++);
+    for (i = 0; i < 10; i++);
 }
  
 /*
