@@ -105,6 +105,7 @@ int main(void)
   MX_TIM5_Init();
   MX_CAN1_Init();
   MX_TIM7_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
 	ble_Init();	
@@ -116,13 +117,12 @@ int main(void)
 	mpu_dmp_init();
 	//4.can
 	can_user_init(&hcan1);
-	/*float pitch,roll,yaw;
-	while(1){
-		mpu_dmp_get_data(&pitch,&roll,&yaw);
-		vofa_send(3,(float)pitch,(float)roll,(float)yaw);
-		HAL_Delay(50);
-		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-	}*/
+	
+	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);//mcu
+	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid
+	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);//sbus_check
+	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);//sbus_receive
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -218,18 +218,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
  if (htim->Instance == TIM5) 
 	{
-			//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
-			static uint8_t pwm_counter = 0;
-			if (pwm_counter < g_led_brightness) {
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
-			}
-			else {
-					HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
-			}
-			pwm_counter++;
-			if (pwm_counter >= 100) {
-					pwm_counter = 0;
-			}
+		//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
+		static uint8_t pwm_counter = 0;
+		if (pwm_counter < g_led_brightness) {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+		}
+		else {
+				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+		}
+		pwm_counter++;
+		if (pwm_counter >= 100) {
+				pwm_counter = 0;
+		}
 	}
   /* USER CODE END Callback 1 */
 }

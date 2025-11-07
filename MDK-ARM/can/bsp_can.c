@@ -23,6 +23,10 @@ void can1_rx(void const * argument){
   /* Infinite loop */
   for(;;)
   {
+		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
+		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
+		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
@@ -45,33 +49,22 @@ void can1_rx(void const * argument){
 				pid_counter=0;
 				pid_angle_task();
 			}
-			set_motor_voltage( 0, (int16_t)pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle),0,0,0);		
+      //只有标准位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz
+      if(sbus_receive_success)
+			  set_motor_voltage( 0, (int16_t)pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle),0,0,0);		
 			#if 0	
 				vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
-			#elif 0
+			#elif can_send_pid
 				vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
 			#endif	
 			can_rx_flag=0;
 		}
-
-		//osDelay(1);
+		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
+		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
+		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
   }
   /* USER CODE END can1_rx */
-}
-
-void can1_tx(void const * argument)
-{
-    for (;;)
-    {
-      // 发送CAN报文
-		#if 0	
-			vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
-		#elif 0
-			vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
-		#endif	
-		osDelay(1000);
-    }
-  /* USER CODE END can1_tx */
 }
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
@@ -106,7 +99,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   }
   
 }
-
 
 _Bool set_motor_voltage(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4)
 {

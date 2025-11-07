@@ -37,39 +37,10 @@ void IIC_GPIO_Init(void);
 *	返 回 值: 无
 *********************************************************************************************************
 */
-#include "tim.h"
-
-void user_delaynus_tim(uint16_t nus)
-{
-
-    uint16_t  differ = 0xffff-nus-5;
-    //设置定时器2的初始值
-  __HAL_TIM_SetCounter(&htim7,differ);
-  //开启定时器
-  HAL_TIM_Base_Start(&htim7);
-
-  while( differ<0xffff-5)
-    {
-        differ = __HAL_TIM_GetCounter(&htim7);
-    };
- //关闭定时器
-  HAL_TIM_Base_Stop(&htim7);
-}
 
 static void IIC_Delay(void)
 {
-    uint8_t i;
-    /*　
-     	下面的时间是通过安富莱AX-Pro逻辑分析仪测试得到的。
-    	CPU主频72MHz时，在内部Flash运行, MDK工程不优化
-    	循环次数为10时，SCL频率 = 205KHz
-    	循环次数为7时，SCL频率 = 347KHz， SCL高电平时间1.5us，SCL低电平时间2.87us
-     	循环次数为5时，SCL频率 = 421KHz， SCL高电平时间1.25us，SCL低电平时间2.375us
- 
-    IAR工程编译效率高，不能设置为7
-    */
-    user_delaynus_tim(5);
-    //for (i = 0; i < 10; i++);
+	__NOP();
 }
  
 

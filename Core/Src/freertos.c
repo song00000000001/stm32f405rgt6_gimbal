@@ -49,14 +49,10 @@
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 osThreadId breathing_led_tHandle;
-osThreadId serial_tx_taskHandle;
-osThreadId cmdparse_taskHandle;
-osThreadId mpu6050_read_taHandle;
+osThreadId mpu_read_taskHandle;
 osThreadId can1_rx_taskHandle;
-osThreadId can1_tx_taskHandle;
+osThreadId sbus_rx_taskHandle;
 osMessageQId led_control_queueHandle;
-osMessageQId ble_rx_queueHandle;
-osMessageQId mpu_data_queueHandle;
 osMessageQId can_rx_queueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,11 +62,9 @@ osMessageQId can_rx_queueHandle;
 
 void StartDefaultTask(void const * argument);
 void led_breath(void const * argument);
-void ble_send(void const * argument);
-void ble_receive(void const * argument);
 void mpu6050_read(void const * argument);
 void can1_rx(void const * argument);
-void can1_tx(void const * argument);
+void sbus_receive(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -117,14 +111,6 @@ void MX_FREERTOS_Init(void) {
   osMessageQDef(led_control_queue, 5, 2);
   led_control_queueHandle = osMessageCreate(osMessageQ(led_control_queue), NULL);
 
-  /* definition and creation of ble_rx_queue */
-  osMessageQDef(ble_rx_queue, 4, 14);
-  ble_rx_queueHandle = osMessageCreate(osMessageQ(ble_rx_queue), NULL);
-
-  /* definition and creation of mpu_data_queue */
-  osMessageQDef(mpu_data_queue, 4, 6);
-  mpu_data_queueHandle = osMessageCreate(osMessageQ(mpu_data_queue), NULL);
-
   /* definition and creation of can_rx_queue */
   osMessageQDef(can_rx_queue, 5, 9);
   can_rx_queueHandle = osMessageCreate(osMessageQ(can_rx_queue), NULL);
@@ -139,28 +125,20 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of breathing_led_t */
-  osThreadDef(breathing_led_t, led_breath, osPriorityNormal, 0, 128);
+  osThreadDef(breathing_led_t, led_breath, osPriorityIdle, 0, 128);
   breathing_led_tHandle = osThreadCreate(osThread(breathing_led_t), NULL);
 
-  /* definition and creation of serial_tx_task */
-  osThreadDef(serial_tx_task, ble_send, osPriorityIdle, 0, 128);
-  serial_tx_taskHandle = osThreadCreate(osThread(serial_tx_task), NULL);
-
-  /* definition and creation of cmdparse_task */
-  osThreadDef(cmdparse_task, ble_receive, osPriorityAboveNormal, 0, 128);
-  cmdparse_taskHandle = osThreadCreate(osThread(cmdparse_task), NULL);
-
-  /* definition and creation of mpu6050_read_ta */
-  osThreadDef(mpu6050_read_ta, mpu6050_read, osPriorityNormal, 0, 128);
-  mpu6050_read_taHandle = osThreadCreate(osThread(mpu6050_read_ta), NULL);
+  /* definition and creation of mpu_read_task */
+  osThreadDef(mpu_read_task, mpu6050_read, osPriorityNormal, 0, 128);
+  mpu_read_taskHandle = osThreadCreate(osThread(mpu_read_task), NULL);
 
   /* definition and creation of can1_rx_task */
-  osThreadDef(can1_rx_task, can1_rx, osPriorityHigh, 0, 128);
+  osThreadDef(can1_rx_task, can1_rx, osPriorityAboveNormal, 0, 128);
   can1_rx_taskHandle = osThreadCreate(osThread(can1_rx_task), NULL);
 
-  /* definition and creation of can1_tx_task */
-  osThreadDef(can1_tx_task, can1_tx, osPriorityIdle, 0, 128);
-  can1_tx_taskHandle = osThreadCreate(osThread(can1_tx_task), NULL);
+  /* definition and creation of sbus_rx_task */
+  osThreadDef(sbus_rx_task, sbus_receive, osPriorityHigh, 0, 128);
+  sbus_rx_taskHandle = osThreadCreate(osThread(sbus_rx_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -204,42 +182,6 @@ __weak void led_breath(void const * argument)
   /* USER CODE END led_breath */
 }
 
-/* USER CODE BEGIN Header_ble_send */
-/**
-* @brief Function implementing the serial_tx_task thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_ble_send */
-__weak void ble_send(void const * argument)
-{
-  /* USER CODE BEGIN ble_send */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END ble_send */
-}
-
-/* USER CODE BEGIN Header_ble_receive */
-/**
-* @brief Function implementing the cmdparse_task thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_ble_receive */
-__weak void ble_receive(void const * argument)
-{
-  /* USER CODE BEGIN ble_receive */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END ble_receive */
-}
-
 /* USER CODE BEGIN Header_mpu6050_read */
 /**
 * @brief Function implementing the mpu6050_read_ta thread.
@@ -276,22 +218,22 @@ __weak void can1_rx(void const * argument)
   /* USER CODE END can1_rx */
 }
 
-/* USER CODE BEGIN Header_can1_tx */
+/* USER CODE BEGIN Header_sbus_receive */
 /**
-* @brief Function implementing the can1_tx_task thread.
+* @brief Function implementing the sbus_rx_task thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_can1_tx */
-__weak void can1_tx(void const * argument)
+/* USER CODE END Header_sbus_receive */
+__weak void sbus_receive(void const * argument)
 {
-  /* USER CODE BEGIN can1_tx */
+  /* USER CODE BEGIN sbus_receive */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END can1_tx */
+  /* USER CODE END sbus_receive */
 }
 
 /* Private application code --------------------------------------------------*/
