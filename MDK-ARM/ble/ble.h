@@ -21,8 +21,6 @@
 #define led_timer 50
 #define SBUS_CHANNEL_COUNT 16
 
-extern uint8_t  ble_rx_buffer[];//串口接收缓冲区
-extern uint8_t  test_buf[];//串口发送测试字符串
 extern bool sbus_receive_success;
 extern float led_freq;
 
