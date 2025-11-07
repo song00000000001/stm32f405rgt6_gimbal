@@ -6,7 +6,7 @@
 
 #define can_send_pid 0
 #define ble_send_rx_buf_debug 0
-#define sbus_send_rx_buf_debug 1
+#define sbus_send_rx_buf_debug 0
 #define mpu_send_angle 0
 #define sbus_send_chan 1
 #define ble_uart_send_debug 1
@@ -21,8 +21,6 @@
 #define led_timer 50
 #define SBUS_CHANNEL_COUNT 16
 
-extern uint8_t  ble_rx_buffer[];//串口接收缓冲区
-extern uint8_t  test_buf[];//串口发送测试字符串
 extern bool sbus_receive_success;
 extern float led_freq;
 

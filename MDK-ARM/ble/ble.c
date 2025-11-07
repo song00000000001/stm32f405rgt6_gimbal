@@ -15,7 +15,7 @@ uint8_t  ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
 SbusData_t my_sbus_data;
 
-extern osMessageQId ble_rx_queueHandle,led_control_queueHandle,sbus_buf_queueHandle;
+extern osMessageQId led_control_queueHandle;
 
 void ble_parse(uint8_t *buf);
 bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data);
@@ -91,7 +91,19 @@ void sbus_receive(void const * argument)
 	if(sbus_rx_flag){//如果成功解析
 		sbus_receive_success=!my_sbus_data.failsafe;//并且没有丢失联系就激活,原子操作
 		#if sbus_send_chan
-			my_printf("ch1:%d,failsafe:%d\r\n",my_sbus_data.channels[0],my_sbus_data.failsafe);
+			my_printf("ch1:%4d, ch2:%4d, ch3:%4d, ch4:%4d, "
+				"ch5:%4d, ch6:%4d, ch7:%4d, ch8:%4d,rssi:%4d,"
+				  "frame_lost:%d,failsafe:%d\r\n",
+				  my_sbus_data.channels[0], my_sbus_data.channels[1],
+				  my_sbus_data.channels[2], my_sbus_data.channels[3],
+				  my_sbus_data.channels[4], my_sbus_data.channels[5],
+				  my_sbus_data.channels[6], my_sbus_data.channels[7],
+				  my_sbus_data.channels[15],
+				  my_sbus_data.frame_lost,my_sbus_data.failsafe);
+/*
+ch1: 984, ch2: 995, ch3: 172, ch4: 998, ch5:1809, ch6: 992, ch7: 172, ch8: 992,rssi:1904,frame_lost:0,failsafe:0
+右roll,右pitch,左油,左yaw,e,b,c,f,ch16
+*/
 		#endif
 	}
 	//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
