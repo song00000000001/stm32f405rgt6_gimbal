@@ -68,7 +68,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
    if ( huart->Instance== USART2)
    {
-		HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
+
 		if(!sbus_read_flag) memcpy( sbus_rx_buf_t,  sbus_rx_buf,SBUS_FRAME_SIZE);
 		sbus_rx_flag=true; 
         // 重启DMA接收
@@ -77,7 +77,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		#endif
 
 		HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE);
-		HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
    }
 }
 
@@ -110,7 +109,7 @@ void sbus_receive(void const * argument)
   	}	
 
 	if(sbus_rx_flag){//如果成功解析
-		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
 		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.channels[4]>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
 		#if sbus_send_chan
 			if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){

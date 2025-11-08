@@ -40,15 +40,17 @@ void can1_rx(void const * argument){
 				motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
 			#endif
 
-			//只有标志位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz
+			
+			pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle);
+			pid_counter++;
+			if(pid_counter>=10){
+				pid_counter=0;
+				pid_angle_task();
+			}			
+
+			//只有标志位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz	
 			if(sbus_receive_success){
-				pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle);
 				set_motor_voltage( 0, (int16_t)pid_speed.output,0,0,0);
-				pid_counter++;
-				if(pid_counter>=10){
-					pid_counter=0;
-					pid_angle_task();
-				}				
 			}
 			
 			#if can_send_pid
