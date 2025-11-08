@@ -12,7 +12,7 @@ float led_freq=1;
 bool sbus_receive_success=false;
 bool sbus_rx_flag=false;
 bool sbus_read_flag=false;
-uint8_t  ble_rx_buffer[ble_rx_buffer_size];
+uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
 uint8_t sbus_rx_buf_t[SBUS_FRAME_SIZE];
 
@@ -88,11 +88,9 @@ extern DMA_HandleTypeDef hdma_usart1_tx;
 void sbus_receive(void const * argument)
 {
   /* USER CODE BEGIN sbus_receive */
-	uint8_t local_rx_buffer[ble_rx_buffer_size];
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
     const TickType_t xFrequency = pdMS_TO_TICKS(10); //每100hz检查遥控信号
 	SbusData_t my_sbus_data;
-	uint8_t ble_tx_counter=0;
   /* Infinite loop */
   for(;;)
   {
@@ -110,13 +108,14 @@ void sbus_receive(void const * argument)
 
 	if(sbus_rx_flag){//如果成功解析
 		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.channels[4]>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
-		#if sbus_send_chan
+		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.ch1>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
+		#if 1//sbus_send_chan
 			if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-				my_printf("c3:%4dc5:%4drs:%4dlost:%dfail:%dcan:%d\n\0",
-					my_sbus_data.channels[2], my_sbus_data.channels[4],
-					my_sbus_data.channels[15],
-					my_sbus_data.frame_lost,my_sbus_data.failsafe,sbus_receive_success);  
+				my_printf("ch1:%4dch2:%4dch3:%4dch4:%4dsw1:%dsw2:%d,l:%d,f:%d\n\0",
+					my_sbus_data.ch1, my_sbus_data.ch2,
+					my_sbus_data.ch3,my_sbus_data.ch4,
+					my_sbus_data.sw1,my_sbus_data.sw2,
+					my_sbus_data.frame_lost,my_sbus_data.failsafe);  
 			} 
 		#endif
 		sbus_rx_flag=false;
@@ -143,33 +142,56 @@ my_printf("c1:%4dc2:%4dc3:%4dc4:%4d"
 
 bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data)
 {
-    // 1. 帧头帧尾校验
-    if (frame[0] != 0x0F || frame[24] != 0x00) {
-        return false;
-    }
+	// 1. 帧头帧尾校验
+	if (frame[0] != 0x0F || frame[24] != 0x00) {
+		return false;
+	}
 
-    // 2. 解码16个通道的数据 (核心部分)
-    // 使用位操作精确地提取每个11位通道
-    sbus_data->channels[0]  = ((frame[1]    | frame[2] << 8) & 0x07FF);
-    sbus_data->channels[1]  = ((frame[2] >> 3 | frame[3] << 5) & 0x07FF);
-    sbus_data->channels[2]  = ((frame[3] >> 6 | frame[4] << 2 | frame[5] << 10) & 0x07FF);
-    sbus_data->channels[3]  = ((frame[5] >> 1 | frame[6] << 7) & 0x07FF);
-    sbus_data->channels[4]  = ((frame[6] >> 4 | frame[7] << 4) & 0x07FF);
-    sbus_data->channels[5]  = ((frame[7] >> 7 | frame[8] << 1 | frame[9] << 9) & 0x07FF);
-    sbus_data->channels[6]  = ((frame[9] >> 2 | frame[10] << 6) & 0x07FF);
-    sbus_data->channels[7]  = ((frame[10] >> 5 | frame[11] << 3) & 0x07FF);
-    sbus_data->channels[8]  = ((frame[12]   | frame[13] << 8) & 0x07FF);
-    sbus_data->channels[9]  = ((frame[13] >> 3 | frame[14] << 5) & 0x07FF);
-    sbus_data->channels[10] = ((frame[14] >> 6 | frame[15] << 2 | frame[16] << 10) & 0x07FF);
-    sbus_data->channels[11] = ((frame[16] >> 1 | frame[17] << 7) & 0x07FF);
-    sbus_data->channels[12] = ((frame[17] >> 4 | frame[18] << 4) & 0x07FF);
-    sbus_data->channels[13] = ((frame[18] >> 7 | frame[19] << 1 | frame[20] << 9) & 0x07FF);
-    sbus_data->channels[14] = ((frame[20] >> 2 | frame[21] << 6) & 0x07FF);
-    sbus_data->channels[15] = ((frame[21] >> 5 | frame[22] << 3) & 0x07FF);
-    
-    // 3. 解析标志位
-    sbus_data->ch17 = frame[23] & 0x01;
-    sbus_data->ch18 = frame[23] & 0x02;
+    // 2. 解码dbus
+	//satori：这里完成的是数据的分离和拼接，减去1024是为了让数据的中间值变为0
+	sbus_data->ch1 = (frame[0] | frame[1] << 8) & 0x07FF;
+	sbus_data->ch1 -= 1024;
+	sbus_data->ch2 = (frame[1] >> 3 | frame[2] << 5) & 0x07FF;
+	sbus_data->ch2 -= 1024;
+	sbus_data->ch3 = (frame[2] >> 6 | frame[3] << 2 | frame[4] << 10) & 0x07FF;
+	sbus_data->ch3 -= 1024;
+	sbus_data->ch4 = (frame[4] >> 1 | frame[5] << 7) & 0x07FF;
+	sbus_data->ch4 -= 1024;
+	
+	//satori:防止数据零漂，设置正负5的死区
+	/* prevent remote control zero deviation */
+	if(sbus_data->ch1 <= 5 && sbus_data->ch1 >= -5)
+		sbus_data->ch1 = 0;
+	if(sbus_data->ch2 <= 5 && sbus_data->ch2 >= -5)
+		sbus_data->ch2 = 0;
+	if(sbus_data->ch3 <= 5 && sbus_data->ch3 >= -5)
+		sbus_data->ch3 = 0;
+	if(sbus_data->ch4 <= 5 && sbus_data->ch4 >= -5)
+		sbus_data->ch4 = 0;
+	
+	sbus_data->sw1 = ((frame[5] >> 4) & 0x000C) >> 2;
+	sbus_data->sw2 = (frame[5] >> 4) & 0x0003;
+	
+	//satori:防止数据溢出
+	if ((abs(sbus_data->ch1) > 660) || \
+		(abs(sbus_data->ch2) > 660) || \
+		(abs(sbus_data->ch3) > 660) || \
+		(abs(sbus_data->ch4) > 660))
+	{
+		memset(sbus_data, 0, sizeof( SbusData_t));
+		return ;
+	}
+
+	sbus_data->mouse.x = frame[6] | (frame[7] << 8); // x axis
+	sbus_data->mouse.y = frame[8] | (frame[9] << 8);
+	sbus_data->mouse.z = frame[10] | (frame[11] << 8);
+
+	sbus_data->mouse.l = frame[12];
+	sbus_data->mouse.r = frame[13];
+
+	sbus_data->kb.key_code = frame[14] | frame[15] << 8; // key borad code
+	sbus_data->wheel = (frame[16] | frame[17] << 8) - 1024;
+
     sbus_data->frame_lost = frame[23] & 0x04;
     sbus_data->failsafe = frame[23] & 0x08;
 

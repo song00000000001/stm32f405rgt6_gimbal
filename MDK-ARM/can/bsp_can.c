@@ -27,7 +27,7 @@ void can1_rx(void const * argument){
 
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
+    
 		if(can_rx_flag){
 			can_read_flag=1;     //互斥锁
 			motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;// motor_info_0[0].id=motor_info[0].id;// motor_info_0[0].torque_current=motor_info[0].torque_current;
@@ -50,7 +50,7 @@ void can1_rx(void const * argument){
 
 			//只有标志位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz	
 			if(sbus_receive_success){
-				set_motor_voltage( 0, (int16_t)pid_speed.output,0,0,0);
+				set_motor_voltage( 0,0,(int16_t)pid_speed.output,0,0);
 			}
 			
 			#if can_send_pid
