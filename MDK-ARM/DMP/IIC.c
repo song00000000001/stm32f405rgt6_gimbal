@@ -4,8 +4,8 @@
 /* 定义IIC总线连接的GPIO端口, 用户只需要修改下面4行代码即可任意改变SCL和SDA的引脚 */
 #define GPIO_PORT_IIC     GPIOB                       /* GPIO端口 */
 #define RCC_IIC_ENABLE    __HAL_RCC_GPIOB_CLK_ENABLE()       /* GPIO端口时钟 */
-#define IIC_SCL_PIN       GPIO_PIN_4                  /* 连接到SCL时钟线的GPIO */
-#define IIC_SDA_PIN       GPIO_PIN_3                  /* 连接到SDA数据线的GPIO */
+#define IIC_SCL_PIN       GPIO_PIN_6                  /* 连接到SCL时钟线的GPIO */
+#define IIC_SDA_PIN       GPIO_PIN_7                  /* 连接到SDA数据线的GPIO */
  
 /* 定义读写SCL和SDA的宏，已增加代码的可移植性和可阅读性 */
 #if 1	/* 条件编译： 1 选择GPIO的库函数实现IO读写 */
@@ -37,22 +37,16 @@ void IIC_GPIO_Init(void);
 *	返 回 值: 无
 *********************************************************************************************************
 */
+
 static void IIC_Delay(void)
 {
-    uint8_t i;
- 
-    /*　
-     	下面的时间是通过安富莱AX-Pro逻辑分析仪测试得到的。
-    	CPU主频72MHz时，在内部Flash运行, MDK工程不优化
-    	循环次数为10时，SCL频率 = 205KHz
-    	循环次数为7时，SCL频率 = 347KHz， SCL高电平时间1.5us，SCL低电平时间2.87us
-     	循环次数为5时，SCL频率 = 421KHz， SCL高电平时间1.25us，SCL低电平时间2.375us
- 
-    IAR工程编译效率高，不能设置为7
-    */
-    for (i = 0; i < 10; i++);
+	uint8_t i=0;
+	for(i=0;i<1;i++)
+		__NOP();
 }
  
+
+
 /*
 *********************************************************************************************************
 *	函 数 名: IIC_Start
