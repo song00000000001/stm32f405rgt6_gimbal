@@ -25,6 +25,7 @@ void mpu6050_read(void const * argument)
 	{
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
 		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
 		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
 		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
@@ -38,7 +39,7 @@ void mpu6050_read(void const * argument)
 		#if mpu_send_angle
             vofa_send(3,(float)pitch,(float)roll,(float)yaw);
         #endif
-        //
+        HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
 		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
 		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
 		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
