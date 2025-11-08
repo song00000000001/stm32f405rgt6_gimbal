@@ -25,3 +25,8 @@
 #JLINK file
 JLinkLog.txt
 *.dbgconf
+
+#vscode
+MDK-ARM/.vscode/*
+*.log
+*.json
