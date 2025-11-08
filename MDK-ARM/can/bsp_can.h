@@ -3,10 +3,11 @@
 
 #include "can.h"
 
+#define CAN_3510Moto_ID  0x200
 #define FEEDBACK_ID_BASE      0x205
 #define CAN_CONTROL_ID_BASE   0x1ff
 #define CAN_CONTROL_ID_EXTEND 0x2ff
-#define MOTOR_MAX_NUM         1
+#define MOTOR_MAX_NUM         5
 #define LED_GREEN_TOGGLE()  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14)
 
 #define CAN_RxExtId 0x1800D8D0
@@ -26,5 +27,5 @@ typedef struct
 void can_user_init(CAN_HandleTypeDef* hcan);
 void CAN_Filter_Init_AcceptAll(void);
 uint8_t CAN_Send_Msg(uint8_t* msg,uint8_t len);
-_Bool set_motor_voltage(uint8_t id_range, int16_t v1, int16_t v2, int16_t v3, int16_t v4);
+_Bool set_motor_voltage(int16_t StdId, int16_t v1, int16_t v2, int16_t v3, int16_t v4,CAN_HandleTypeDef *hcan);
 #endif

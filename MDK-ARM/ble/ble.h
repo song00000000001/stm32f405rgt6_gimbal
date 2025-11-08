@@ -6,10 +6,10 @@
 
 //切换输出用
 #define can_send_rx 0   //电机读取信息输出
-#define can_send_pid 1  //电机串级pid输出
+#define can_send_pid 0  //电机串级pid输出
 #define pid_speed_mode 0 
-#define mpu_send_angle 0        //mpu6050角度输出
-#define sbus_send_chan 0       //遥控器接收信号输出
+#define mpu_send_angle 1        //mpu6050角度输出
+#define sbus_send_chan 0      //遥控器接收信号输出
 
 //debug用
 #define ble_uart_send_debug 0        //初始化发送一些信息

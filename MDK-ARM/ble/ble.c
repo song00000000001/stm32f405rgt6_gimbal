@@ -3,6 +3,8 @@
 #include "breathing_led.h"
 #include "pid.h"
 #include "stdio.h"
+#include <stdlib.h>
+#include "stm32f4xx_it.h"
 
 #include "FreeRTOS.h"
 #include "queue.h"
@@ -81,10 +83,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 }
 
   /*
-ch1: 984, ch2: 995, ch3: 172, ch4: 998, ch5:1809, ch6: 992, ch7: 172, ch8: 992,rssi:1904,frame_lost:0,failsafe:0
-右roll,右pitch,左油,左yaw,e,b,c,f,ch16
+
 */
-extern DMA_HandleTypeDef hdma_usart1_tx;
+
 void sbus_receive(void const * argument)
 {
   /* USER CODE BEGIN sbus_receive */
@@ -109,7 +110,7 @@ void sbus_receive(void const * argument)
 	if(sbus_rx_flag){//如果成功解析
 		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
 		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.ch1>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
-		#if 1//sbus_send_chan
+		#if sbus_send_chan
 			if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
 				my_printf("ch1:%4dch2:%4dch3:%4dch4:%4dsw1:%dsw2:%d,l:%d,f:%d\n\0",
 					my_sbus_data.ch1, my_sbus_data.ch2,
@@ -179,7 +180,7 @@ bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data)
 		(abs(sbus_data->ch4) > 660))
 	{
 		memset(sbus_data, 0, sizeof( SbusData_t));
-		return ;
+		return false;
 	}
 
 	sbus_data->mouse.x = frame[6] | (frame[7] << 8); // x axis

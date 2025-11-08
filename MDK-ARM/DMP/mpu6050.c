@@ -20,7 +20,9 @@ void mpu6050_read(void const * argument)
 	//mpu6050_raw mpu6050_raw_data;
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
     const TickType_t xFrequency = pdMS_TO_TICKS(5); 
-        
+    static float absolute_yaw=0;
+    static float last_yaw=0; 
+    static float delta_yaw=0;   
 	for(;;)
 	{
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
@@ -36,8 +38,21 @@ void mpu6050_read(void const * argument)
             vofa_send(2,(float)ax,(float)gx);
         #endif    
         mpu_dmp_get_data(&pitch,&roll,&yaw);
+       // yaw+=180;
+        float yaw_delta = yaw - last_yaw;
+        if (yaw_delta > 180.0f)
+        {
+            yaw_delta -= 360.0f; 
+        }
+        else if (yaw_delta < -180.0f)
+        {
+            yaw_delta += 360.0f; 
+        }
+        absolute_yaw+=yaw_delta;
+        last_yaw=yaw;
+    
 		#if mpu_send_angle
-            vofa_send(3,(float)pitch,(float)roll,(float)yaw);
+            vofa_send(3,(float)pitch,(float)roll,(float)absolute_yaw);
         #endif
         HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
 		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);

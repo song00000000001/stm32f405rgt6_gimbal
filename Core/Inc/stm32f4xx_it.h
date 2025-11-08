@@ -42,7 +42,7 @@ extern "C" {
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
+extern DMA_HandleTypeDef hdma_usart1_tx;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

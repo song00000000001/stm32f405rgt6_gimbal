@@ -105,6 +105,7 @@ int main(void)
   MX_TIM5_Init();
   MX_CAN1_Init();
   MX_USART2_UART_Init();
+  MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
 	ble_Init();	
@@ -116,29 +117,25 @@ int main(void)
 	mpu_dmp_init();
 	//4.can
 	can_user_init(&hcan1);
-	
+	can_user_init(&hcan2);
+
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);//mcu
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid
 	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);//sbus_check
 	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);//sbus_receive
 	 SbusData_t my_sbus_data;
   while(0){
-		sbus_receive_success=false;
 	  
 		if(sbus_rx_flag){//如果成功解析
 			//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
-			sbus_receive_success=!my_sbus_data.failsafe;//并且没有丢失联系就激活,原子操作
-			
-			my_printf("ch1:%4d, ch2:%4d, ch3:%4d, ch4:%4d, "
-					"ch5:%4d, ch6:%4d, ch7:%4d, ch8:%4d,rssi:%4d,"
-					  "frame_lost:%d,failsafe:%d\r\n",
-					  my_sbus_data.channels[0], my_sbus_data.channels[1],
-					  my_sbus_data.channels[2], my_sbus_data.channels[3],
-					  my_sbus_data.channels[4], my_sbus_data.channels[5],
-					  my_sbus_data.channels[6], my_sbus_data.channels[7],
-					  my_sbus_data.channels[15],
-					  my_sbus_data.frame_lost,my_sbus_data.failsafe);
-			
+			//if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
+				my_printf("ch1:%4dch2:%4dch3:%4dch4:%4dsw1:%dsw2:%d,l:%d,f:%d\n\0",
+					my_sbus_data.ch1, my_sbus_data.ch2,
+					my_sbus_data.ch3,my_sbus_data.ch4,
+					my_sbus_data.sw1,my_sbus_data.sw2,
+					my_sbus_data.frame_lost,my_sbus_data.failsafe);  
+			//} 
+
 			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
 		}
 		//HAL_Delay(10);

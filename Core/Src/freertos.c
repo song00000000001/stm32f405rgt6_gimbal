@@ -206,6 +206,7 @@ __weak void mpu6050_read(void const * argument)
 * @param argument: Not used
 * @retval None
 */
+
 /* USER CODE END Header_can1_rx */
 __weak void can1_rx(void const * argument)
 {
