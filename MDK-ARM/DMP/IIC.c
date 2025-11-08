@@ -40,7 +40,9 @@ void IIC_GPIO_Init(void);
 
 static void IIC_Delay(void)
 {
-	__NOP();
+	uint8_t i=0;
+	for(i=0;i<1;i++)
+		__NOP();
 }
  
 

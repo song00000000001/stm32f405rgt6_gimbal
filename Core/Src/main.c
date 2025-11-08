@@ -121,7 +121,32 @@ int main(void)
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid
 	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);//sbus_check
 	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);//sbus_receive
-
+	 SbusData_t my_sbus_data;
+  while(0){
+		sbus_receive_success=false;
+	  
+		if(sbus_rx_flag){//如果成功解析
+			//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
+			sbus_receive_success=!my_sbus_data.failsafe;//并且没有丢失联系就激活,原子操作
+			
+			my_printf("ch1:%4d, ch2:%4d, ch3:%4d, ch4:%4d, "
+					"ch5:%4d, ch6:%4d, ch7:%4d, ch8:%4d,rssi:%4d,"
+					  "frame_lost:%d,failsafe:%d\r\n",
+					  my_sbus_data.channels[0], my_sbus_data.channels[1],
+					  my_sbus_data.channels[2], my_sbus_data.channels[3],
+					  my_sbus_data.channels[4], my_sbus_data.channels[5],
+					  my_sbus_data.channels[6], my_sbus_data.channels[7],
+					  my_sbus_data.channels[15],
+					  my_sbus_data.frame_lost,my_sbus_data.failsafe);
+			
+			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
+		}
+		//HAL_Delay(10);
+		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
+		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
+		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
+	}
+  
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

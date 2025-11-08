@@ -20,47 +20,50 @@ void can1_rx(void const * argument){
   TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
   const TickType_t xFrequency = pdMS_TO_TICKS(2); // 
   static uint16_t pid_counter=0;
+	//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
   /* Infinite loop */
   for(;;)
   {
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
+
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
 		if(can_rx_flag){
 			can_read_flag=1;     //互斥锁
-			// motor_info_0[0].dlc=motor_info[0].dlc; 
-			// motor_info_0[0].id=motor_info[0].id;
-			motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;
-			motor_info_0[0].rotor_speed=motor_info[0].rotor_speed;
-			// motor_info_0[0].temp=motor_info[0].temp;
-			// motor_info_0[0].torque_current=motor_info[0].torque_current;
+			motor_info_0[0].rotor_angle=motor_info[0].rotor_angle;// motor_info_0[0].id=motor_info[0].id;// motor_info_0[0].torque_current=motor_info[0].torque_current;
+			motor_info_0[0].rotor_speed=motor_info[0].rotor_speed;// motor_info_0[0].temp=motor_info[0].temp;// motor_info_0[0].dlc=motor_info[0].dlc; 
 			can_read_flag=0;
-			#if 0
-			my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
+      
+			#if can_send_rx
+				my_printf("id%d,dlc:%d,ang:%d,spe:%d,tem:%d,cur:%d\r\n",
 				motor_info_0[0].id,motor_info_0[0].dlc,motor_info_0[0].rotor_angle,
-			motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
+				motor_info_0[0].rotor_speed,motor_info_0[0].temp,motor_info_0[0].torque_current);
 			#endif
-			pid_counter++;
-			if(pid_counter>=10){
-				pid_counter=0;
-				pid_angle_task();
+
+			//只有标志位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz
+			if(sbus_receive_success){
+				pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle);
+				set_motor_voltage( 0, (int16_t)pid_speed.output,0,0,0);
+				pid_counter++;
+				if(pid_counter>=10){
+					pid_counter=0;
+					pid_angle_task();
+				}				
 			}
-      //只有标准位激活才会驱动电机,且标准位任务优先级高于该任务,频率是100hz
-      if(sbus_receive_success)
-			  set_motor_voltage( 0, (int16_t)pid_speed_task(motor_info_0[0].rotor_speed,motor_info_0[0].rotor_angle),0,0,0);		
-			#if 0	
-				vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
-			#elif can_send_pid
-				vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
+			
+			#if can_send_pid
+				#if pid_speed_mode	
+					vofa_send(4,(float)pid_speed.target,(float)pid_speed.now,(float)(pid_speed.now - pid_speed.target),(float)pid_speed.output);
+				#else
+					 vofa_send(4,(float)pid_angle.target ,(float)pid_angle.now ,(float)(pid_angle.now - pid_angle.target) ,(float)pid_angle.output);
+				#endif
 			#endif	
+
 			can_rx_flag=0;
+
+			HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
 		}
 		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
 		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
 		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
   }
