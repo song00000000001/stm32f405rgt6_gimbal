@@ -4,7 +4,6 @@
 #include "main.h"
 //#include "tim.h"
 #include <stdbool.h>
-#define pid_debug_pos_inc 1
 
 typedef struct pid_pos
 {

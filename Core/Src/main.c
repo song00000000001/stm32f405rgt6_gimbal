@@ -63,7 +63,7 @@
 void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
-extern void user_delaynus_tim(uint16_t nus);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,8 +116,8 @@ int main(void)
 	//MPU_Init();
 	mpu_dmp_init();
 	//4.can
-	can_user_init(&hcan1);
-	can_user_init(&hcan2);
+	can1_filter_init();
+	can2_filter_init();
 
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);//mcu
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid

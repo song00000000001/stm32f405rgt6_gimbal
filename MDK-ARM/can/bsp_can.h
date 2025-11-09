@@ -9,23 +9,24 @@
 #define CAN_CONTROL_ID_EXTEND 0x2ff
 #define MOTOR_MAX_NUM         5
 #define LED_GREEN_TOGGLE()  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14)
-
+#define LED_GREEN_ON()  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14,GPIO_PIN_RESET)
+#define LED_GREEN_OFF()  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14,GPIO_PIN_SET)
+																	  
 #define CAN_RxExtId 0x1800D8D0
 #define CAN_TxExtId 0x1800D0D8
 
-
 typedef struct
 {
-    uint8_t id;  
-    uint8_t  dlc;// 数据长度码  
-    uint8_t  temp;  
+    //uint8_t id;  
+    //uint8_t  dlc;// 数据长度码  
+    //uint8_t  temp;  
     uint16_t rotor_angle;
     int16_t  rotor_speed;
-    int16_t  torque_current;
+    //int16_t  torque_current;
 }moto_info_t;//3+2*3=9
 
-void can_user_init(CAN_HandleTypeDef* hcan);
-void CAN_Filter_Init_AcceptAll(void);
-uint8_t CAN_Send_Msg(uint8_t* msg,uint8_t len);
+void can1_filter_init(void);
+void can2_filter_init(void);
 _Bool set_motor_voltage(int16_t StdId, int16_t v1, int16_t v2, int16_t v3, int16_t v4,CAN_HandleTypeDef *hcan);
+
 #endif

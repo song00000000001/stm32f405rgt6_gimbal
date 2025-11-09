@@ -8,14 +8,17 @@
 #include "FreeRTOSConfig.h"
 #include "ble.h"
 #include "inv_mpu.h"
-float pitch,roll,yaw;
-	   
+#include "string.h"
+
+mpu6050_data_t mpu_data_global;
+bool mpu_data_busy=false,mpu_rx_flag=false;
+
 void mpu6050_read(void const * argument)
 {
 	/* USER CODE BEGIN mpu6050_read */
 	/* Infinite loop */
 	//uint8_t mpu_buf[6],res;
-    
+    mpu6050_data_t mpu_data;
     short ax,ay,az,gx,gy,gz;
 	//mpu6050_raw mpu6050_raw_data;
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
@@ -37,9 +40,10 @@ void mpu6050_read(void const * argument)
             MPU_Get_Gyroscope(&gx,&gy,&gz);
             vofa_send(2,(float)ax,(float)gx);
         #endif    
-        mpu_dmp_get_data(&pitch,&roll,&yaw);
+        mpu_dmp_get_data(&mpu_data);
+		 
        // yaw+=180;
-        float yaw_delta = yaw - last_yaw;
+        float yaw_delta = mpu_data.yaw - last_yaw;
         if (yaw_delta > 180.0f)
         {
             yaw_delta -= 360.0f; 
@@ -49,8 +53,15 @@ void mpu6050_read(void const * argument)
             yaw_delta += 360.0f; 
         }
         absolute_yaw+=yaw_delta;
-        last_yaw=yaw;
-    
+        last_yaw=mpu_data.yaw;
+
+        if(!mpu_data_busy) {
+            mpu_data_busy=true;
+			memcpy(&mpu_data_global,&mpu_data,sizeof(mpu6050_data_t));
+            mpu_data_global.yaw= absolute_yaw;
+            mpu_data_busy=false; 
+		}
+
 		#if mpu_send_angle
             vofa_send(3,(float)pitch,(float)roll,(float)absolute_yaw);
         #endif

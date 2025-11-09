@@ -24,7 +24,7 @@
 #include <math.h>
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
-#include "mpu6050.h"
+
  
  
  
@@ -2893,7 +2893,8 @@ uint8_t mpu_dmp_init(void)
 //yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
 //返回值:0,正常
 //    其他,失败
-uint8_t mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
+#define GYRO_SENSITIVITY 16.4
+uint8_t mpu_dmp_get_data(mpu6050_data_t *mpu)
 {
     float q0=1.0f,q1=0.0f,q2=0.0f,q3=0.0f;
     unsigned long sensor_timestamp;
@@ -2911,6 +2912,13 @@ uint8_t mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
     /* Unlike gyro and accel, quaternions are written to the FIFO in the body frame, q30.
      * The orientation is set by the scalar passed to dmp_set_orientation during initialization.
     **/
+	 // 检查DMP的FIFO中是否确实包含了陀螺仪数据
+    if (sensors & INV_XYZ_GYRO) {
+        // 使用正确的灵敏度系数将原始值转换为度/秒
+        mpu->gx = (float)gyro[0] / GYRO_SENSITIVITY;
+        mpu->gy = (float)gyro[1] / GYRO_SENSITIVITY;
+        mpu->gz = (float)gyro[2] / GYRO_SENSITIVITY;
+    }
     if(sensors&INV_WXYZ_QUAT)
     {
         q0 = quat[0] / q30;	//q30格式转换为浮点数
@@ -2918,9 +2926,11 @@ uint8_t mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
         q2 = quat[2] / q30;
         q3 = quat[3] / q30;
         //计算得到俯仰角/横滚角/航向角
-        *pitch = asin(-2 * q1 * q3 + 2 * q0* q2)* 57.3;	// pitch
-        *roll  = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2* q2 + 1)* 57.3;	// roll
-        *yaw   = atan2(2*(q1*q2 + q0*q3),q0*q0+q1*q1-q2*q2-q3*q3) * 57.3;	//yaw
-    } else return 2;
+        mpu->pitch = asin(-2 * q1 * q3 + 2 * q0* q2)* 57.3;	// pitch
+        mpu->roll  = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2* q2 + 1)* 57.3;	// roll
+        mpu->yaw   = atan2(2*(q1*q2 + q0*q3),q0*q0+q1*q1-q2*q2-q3*q3) * 57.3;	//yaw
+    } 
+	else 
+		return 2;
     return 0;
 }

@@ -4,6 +4,7 @@
 #include "pid.h"
 #include "stdio.h"
 #include <stdlib.h>
+#include "bsp_can.h"
 #include "stm32f4xx_it.h"
 
 #include "FreeRTOS.h"
@@ -11,12 +12,14 @@
 #include "cmsis_os.h"
 
 float led_freq=1;
-bool sbus_receive_success=false;
+uint8_t sbus_receive_success=false;
 bool sbus_rx_flag=false;
 bool sbus_read_flag=false;
+bool sbus_read_fine_flag=false;
 uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
 uint8_t sbus_rx_buf_t[SBUS_FRAME_SIZE];
+volatile ControlState_t g_robot_control_state = CONTROL_DISABLED;
 
 extern osMessageQId led_control_queueHandle;
 
@@ -25,14 +28,18 @@ bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data);
 	  
 void ble_print(uint8_t* buf,uint16_t len)
 {
-	//HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
-	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 10);
+	#if 0
+		HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
+	#else
+		HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 10);
+	#endif
 }
 
 
 void ble_Init(void)
 {
-	my_printf("uart1_start\n");
+	//my_printf("uart1_start\n");
+	ble_print((uint8_t*)"start",5);
 	#if ble_uart_send_debug
 		my_printf("start_uart1\n");
 	#endif
@@ -76,6 +83,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         // 重启DMA接收
 		#if sbus_send_rx_buf_debug
 			ble_print(sbus_rx_buf,SBUS_FRAME_SIZE);
+			//my_printf("r:%s\n",sbus_rx_buf);
 		#endif
 
 		HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE);
@@ -90,8 +98,10 @@ void sbus_receive(void const * argument)
 {
   /* USER CODE BEGIN sbus_receive */
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(10); //每100hz检查遥控信号
+    const TickType_t xFrequency = pdMS_TO_TICKS(14); //每70hz检查遥控信号
 	SbusData_t my_sbus_data;
+	uint8_t fail_count=0,fail_counter2=0;
+	static uint16_t suc_counter=0;
   /* Infinite loop */
   for(;;)
   {
@@ -99,105 +109,47 @@ void sbus_receive(void const * argument)
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
 	 
 	 //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-	sbus_receive_success=false;
-	
 	if(sbus_rx_flag){//如果中断收到信息
 		sbus_read_flag=true;//打开锁,防止数据覆盖。此时有一帧完整的旧数据可读取。
-		sbus_rx_flag=sbus_parse(sbus_rx_buf_t, &my_sbus_data);//解析成功后才执行命令
+		Get_DR16_Data(sbus_rx_buf_t);
 		sbus_read_flag=false;	//解开锁，中断会向2号缓冲区搬数据
-  	}	
+		
+		if(RC_CtrlData.remote.s1 == 3) {
+			g_robot_control_state = CONTROL_ENABLED;
+			LED_GREEN_ON(); // 激活时常亮，更直观
+			fail_counter2=0;
+		} 
+		else {
+			 fail_counter2++;
+			if(fail_counter2>=2){
+				g_robot_control_state = CONTROL_DISABLED;
+				LED_GREEN_OFF(); 
+				fail_counter2=0;
+			}
+		}
 
-	if(sbus_rx_flag){//如果成功解析
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.ch1>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
 		#if sbus_send_chan
-			if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-				my_printf("ch1:%4dch2:%4dch3:%4dch4:%4dsw1:%dsw2:%d,l:%d,f:%d\n\0",
-					my_sbus_data.ch1, my_sbus_data.ch2,
-					my_sbus_data.ch3,my_sbus_data.ch4,
-					my_sbus_data.sw1,my_sbus_data.sw2,
-					my_sbus_data.frame_lost,my_sbus_data.failsafe);  
-			} 
+		if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY&&RC_CtrlData.remote.s2==2){
+			vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
+		}
 		#endif
 		sbus_rx_flag=false;
 		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-	}
+		fail_count=0;
+  	}
+	else{
+		fail_count++;
+		if(fail_count>=2){
+			g_robot_control_state = CONTROL_DISABLED;
+			LED_GREEN_OFF();
+			fail_count = 0;
+		}
+	}		
 
   }
   /* USER CODE END sbus_receive */
 }
 
-/*
-if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-my_printf("c1:%4dc2:%4dc3:%4dc4:%4d"
-	"c5:%4dc6:%4dc7:%4dc8:%4drs:%4d"
-	"lost:%d,fail:%d\r\n",
-	my_sbus_data.channels[0], my_sbus_data.channels[1],
-	my_sbus_data.channels[2], my_sbus_data.channels[3],
-	my_sbus_data.channels[4], my_sbus_data.channels[5],
-	my_sbus_data.channels[6], my_sbus_data.channels[7],
-	my_sbus_data.channels[15],
-	my_sbus_data.frame_lost,my_sbus_data.failsafe); 
-} 
-*/
-
-bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data)
-{
-	// 1. 帧头帧尾校验
-	if (frame[0] != 0x0F || frame[24] != 0x00) {
-		return false;
-	}
-
-    // 2. 解码dbus
-	//satori：这里完成的是数据的分离和拼接，减去1024是为了让数据的中间值变为0
-	sbus_data->ch1 = (frame[0] | frame[1] << 8) & 0x07FF;
-	sbus_data->ch1 -= 1024;
-	sbus_data->ch2 = (frame[1] >> 3 | frame[2] << 5) & 0x07FF;
-	sbus_data->ch2 -= 1024;
-	sbus_data->ch3 = (frame[2] >> 6 | frame[3] << 2 | frame[4] << 10) & 0x07FF;
-	sbus_data->ch3 -= 1024;
-	sbus_data->ch4 = (frame[4] >> 1 | frame[5] << 7) & 0x07FF;
-	sbus_data->ch4 -= 1024;
-	
-	//satori:防止数据零漂，设置正负5的死区
-	/* prevent remote control zero deviation */
-	if(sbus_data->ch1 <= 5 && sbus_data->ch1 >= -5)
-		sbus_data->ch1 = 0;
-	if(sbus_data->ch2 <= 5 && sbus_data->ch2 >= -5)
-		sbus_data->ch2 = 0;
-	if(sbus_data->ch3 <= 5 && sbus_data->ch3 >= -5)
-		sbus_data->ch3 = 0;
-	if(sbus_data->ch4 <= 5 && sbus_data->ch4 >= -5)
-		sbus_data->ch4 = 0;
-	
-	sbus_data->sw1 = ((frame[5] >> 4) & 0x000C) >> 2;
-	sbus_data->sw2 = (frame[5] >> 4) & 0x0003;
-	
-	//satori:防止数据溢出
-	if ((abs(sbus_data->ch1) > 660) || \
-		(abs(sbus_data->ch2) > 660) || \
-		(abs(sbus_data->ch3) > 660) || \
-		(abs(sbus_data->ch4) > 660))
-	{
-		memset(sbus_data, 0, sizeof( SbusData_t));
-		return false;
-	}
-
-	sbus_data->mouse.x = frame[6] | (frame[7] << 8); // x axis
-	sbus_data->mouse.y = frame[8] | (frame[9] << 8);
-	sbus_data->mouse.z = frame[10] | (frame[11] << 8);
-
-	sbus_data->mouse.l = frame[12];
-	sbus_data->mouse.r = frame[13];
-
-	sbus_data->kb.key_code = frame[14] | frame[15] << 8; // key borad code
-	sbus_data->wheel = (frame[16] | frame[17] << 8) - 1024;
-
-    sbus_data->frame_lost = frame[23] & 0x04;
-    sbus_data->failsafe = frame[23] & 0x08;
-
-    return true;
-}
 
 //约定发送字符串格式如下
 //"St+1000.0000E"
@@ -205,9 +157,9 @@ bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data)
 void ble_parse(uint8_t *buf)
 {
 	#if pid_speed_mode
-	pid_inc *pid=&pid_speed;
+	    pid_inc *pid=&pid_speed;
 	#else
-	 pid_pos *pid=&pid_angle;
+	    pid_pos *pid=&pid_angle;
 	#endif
 	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
@@ -298,3 +250,9 @@ void my_printf(const char *format, ...)
 
     va_end(args);
 }
+
+
+
+
+
+
