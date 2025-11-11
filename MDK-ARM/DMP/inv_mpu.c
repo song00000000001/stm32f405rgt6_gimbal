@@ -2894,7 +2894,7 @@ uint8_t mpu_dmp_init(void)
 //返回值:0,正常
 //    其他,失败
 #define GYRO_SENSITIVITY 16.4
-uint8_t mpu_dmp_get_data(mpu6050_data_t *mpu)
+uint8_t mpu_dmp_get_data(mpu6050_raw *mpu)
 {
     float q0=1.0f,q1=0.0f,q2=0.0f,q3=0.0f;
     unsigned long sensor_timestamp;

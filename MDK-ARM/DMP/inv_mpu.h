@@ -133,6 +133,6 @@ unsigned short inv_row_2_scale(const signed char *row);
 unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx);
 uint8_t run_self_test(void);
 uint8_t mpu_dmp_init(void);
-uint8_t mpu_dmp_get_data(mpu6050_data_t *mpu);
+uint8_t mpu_dmp_get_data(mpu6050_raw *mpu);
  
 #endif  /* #ifndef _INV_MPU_H_ */

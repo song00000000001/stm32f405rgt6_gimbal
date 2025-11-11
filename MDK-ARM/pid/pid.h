@@ -2,8 +2,6 @@
 #define __PID_H__
 
 #include "main.h"
-//#include "tim.h"
-#include <stdbool.h>
 
 typedef struct pid_pos
 {
@@ -42,7 +40,6 @@ extern pid_inc pid_speed;
 void pid_init();
 float pid_cal_pos(pid_pos *pid);
 float pid_cal_inc(pid_inc *pid);
-float pid_speed_task(int16_t speed,int16_t angle);
-void pid_angle_task();
+float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id);
 
 #endif

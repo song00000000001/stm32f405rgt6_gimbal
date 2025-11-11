@@ -28,14 +28,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ble.h"
-#include "motor.h"
-#include "pid.h"
-#include "breathing_led.h"
-#include "mpu6050.h"
-#include "bsp_can.h"
 #include "inv_mpu.h"
+#include "bsp_can.h"
+#include "task_self.h"
 
-#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -123,26 +119,6 @@ int main(void)
 	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid
 	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);//sbus_check
 	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);//sbus_receive
-	 SbusData_t my_sbus_data;
-  while(0){
-	  
-		if(sbus_rx_flag){//如果成功解析
-			//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
-			//if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-				my_printf("ch1:%4dch2:%4dch3:%4dch4:%4dsw1:%dsw2:%d,l:%d,f:%d\n\0",
-					my_sbus_data.ch1, my_sbus_data.ch2,
-					my_sbus_data.ch3,my_sbus_data.ch4,
-					my_sbus_data.sw1,my_sbus_data.sw2,
-					my_sbus_data.frame_lost,my_sbus_data.failsafe);  
-			//} 
-
-			HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
-		}
-		//HAL_Delay(10);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8); 
-	}
   
   /* USER CODE END 2 */
 

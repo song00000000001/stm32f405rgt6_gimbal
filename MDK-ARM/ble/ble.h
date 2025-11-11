@@ -2,30 +2,15 @@
 #define BLE_H
 #include "main.h"
 #include "usart.h"
-#include "stdbool.h"
 #include "dr16.h"
-			   
-//切换输出用
-#define can_send_rx 1           //电机读取信息输出
-#define can_send_pid 1         //电机串级pid输出
-#define pid_speed_mode 1 
-#define mpu_send_angle 0      //mpu6050角度输出
-#define sbus_send_chan 1      //遥控器接收信号输出
-#define motor_id 4
-
-//debug用
-#define ble_uart_send_debug 1       //初始化发送一些信息
-#define ble_send_rx_buf_debug 0    //把串口1收到的发出来
-#define sbus_send_rx_buf_debug 0     //把串口2收到的发出来
 
 #define ble_uart &huart1
-#define huart_sbus &huart2
+#define sbus_uart &huart2
 
 #define ble_rx_buffer_size 14
 #define SBUS_FRAME_SIZE 18
-#define BLE_TX_BUF_LEN  64 
+#define BLE_TX_BUF_LEN  32 
 
-#define led_timer 50
 #define SBUS_CHANNEL_COUNT 16
 	 
 typedef struct {
@@ -80,18 +65,15 @@ typedef enum {
   CONTROL_ENABLED
 } ControlState_t;
 
-extern uint8_t sbus_receive_success;
-extern float led_freq;
-extern bool sbus_rx_flag;
-extern SbusData_t my_sbus_data;
-extern bool sbus_read_fine_flag;
-extern volatile ControlState_t g_robot_control_state;
 
+extern uint8_t ble_rx_buffer[];
+extern uint8_t sbus_rx_buf[];
 
 void ble_Init(void);
 void ble_print(uint8_t* buf,uint16_t len);
 void vofa_send(int num, ...);
 void my_printf(const char *format, ...);
+void ble_parse(uint8_t *buf);
 
 #endif
 

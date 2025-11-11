@@ -1,41 +1,68 @@
 #include "ble.h"
-#include "string.h"
-#include "breathing_led.h"
-#include "pid.h"
+
 #include "stdio.h"
-#include <stdlib.h>
-#include "bsp_can.h"
-#include "stm32f4xx_it.h"
+#include "task_self.h"
+#include "stm32f4xx_hal.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "cmsis_os.h"
-
-float led_freq=1;
-uint8_t sbus_receive_success=false;
-bool sbus_rx_flag=false;
-bool sbus_read_flag=false;
-bool sbus_read_fine_flag=false;
 uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
-uint8_t sbus_rx_buf_t[SBUS_FRAME_SIZE];
-volatile ControlState_t g_robot_control_state = CONTROL_DISABLED;
 
-extern osMessageQId led_control_queueHandle;
-
-void ble_parse(uint8_t *buf);
-bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data);
-	  
-void ble_print(uint8_t* buf,uint16_t len)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	#if 0
-		HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
-	#else
-		HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 10);
-	#endif
+   if ( huart->Instance== USART1)
+   {
+		//解析串口调试命令,控制pid参数和目标值,呼吸灯频率
+		ble_parse(ble_rx_buffer);
+		if(led_freq<=0.005 || led_freq>led_timer){
+			led_freq=1; // 这个赋值是原子的，所以不需要互斥锁
+		}
+        // 重启DMA接收
+		#if ble_send_rx_buf_debug
+			ble_print(ble_rx_buffer,ble_rx_buffer_size);
+		#endif
+		HAL_UART_Receive_DMA(ble_uart, ble_rx_buffer, ble_rx_buffer_size);
+   }
+
+   if ( huart->Instance== USART2)
+   {
+		sbus_rx_flag=true; 
+        // 重启DMA接收
+		#if sbus_send_rx_buf_debug
+			ble_print(sbus_rx_buf,SBUS_FRAME_SIZE);
+			//my_printf("r:%s\n",sbus_rx_buf);
+		#endif
+		HAL_UART_Receive_DMA(sbus_uart, sbus_rx_buf, SBUS_FRAME_SIZE);
+   }
 }
 
 
+// 任务/普通上下文调用：尝试使用 DMA，多次尝试/回退到阻塞发送以保证可靠性
+void ble_print(uint8_t* buf,uint16_t len)
+{
+	if (len == 0 || buf == NULL) return;
+	if (len > BLE_TX_BUF_LEN) len = BLE_TX_BUF_LEN;
+
+	// 首次尝试使用 DMA
+	/*if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
+		return;
+	} */
+	/*
+	// 如果 DMA 忙，尝试中止当前传输并重试（任务上下文允许调用阻塞操作）
+	if (HAL_UART_AbortTransmit(ble_uart) == HAL_OK) {
+		// 给硬件一点时间完成中止（很短），然后重试
+		//HAL_Delay(1);
+		for(uint8_t i=0;i<10;i++) {
+			i++;
+			i--;
+		}
+		if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
+			return;
+		}
+	}
+	*/
+	// 最后兜底：阻塞发送，确保调试信息不会完全丢失	
+	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
+}
 void ble_Init(void)
 {
 	//my_printf("uart1_start\n");
@@ -51,103 +78,13 @@ void ble_Init(void)
 		#endif
 		Error_Handler();
   	}
- 	if ( HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE)!= HAL_OK){
+ 	if ( HAL_UART_Receive_DMA(sbus_uart, sbus_rx_buf, SBUS_FRAME_SIZE)!= HAL_OK){
 		// 错误处理
 		#if ble_uart_send_debug
 			my_printf("uart2_error\n");
 		#endif
 		Error_Handler();
 	}
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-   if ( huart->Instance== USART1)
-   {
-		ble_parse(ble_rx_buffer);
-		if(led_freq<=0.005 || led_freq>led_timer){
-			led_freq=1; // 这个赋值是原子的，所以不需要互斥锁
-		}
-        // 重启DMA接收
-		#if ble_send_rx_buf_debug
-			ble_print(ble_rx_buffer,ble_rx_buffer_size);
-		#endif
-		HAL_UART_Receive_DMA(&huart1, ble_rx_buffer, ble_rx_buffer_size);
-   }
-
-   if ( huart->Instance== USART2)
-   {
-
-		if(!sbus_read_flag) memcpy( sbus_rx_buf_t,  sbus_rx_buf,SBUS_FRAME_SIZE);
-		sbus_rx_flag=true; 
-        // 重启DMA接收
-		#if sbus_send_rx_buf_debug
-			ble_print(sbus_rx_buf,SBUS_FRAME_SIZE);
-			//my_printf("r:%s\n",sbus_rx_buf);
-		#endif
-
-		HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE);
-   }
-}
-
-  /*
-
-*/
-
-void sbus_receive(void const * argument)
-{
-  /* USER CODE BEGIN sbus_receive */
-	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(14); //每70hz检查遥控信号
-	SbusData_t my_sbus_data;
-	uint8_t fail_count=0,fail_counter2=0;
-	static uint16_t suc_counter=0;
-  /* Infinite loop */
-  for(;;)
-  {
-	// 1. 使用vTaskDelayUntil实现精准的周期性延时
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
-	 
-	 //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-	if(sbus_rx_flag){//如果中断收到信息
-		sbus_read_flag=true;//打开锁,防止数据覆盖。此时有一帧完整的旧数据可读取。
-		Get_DR16_Data(sbus_rx_buf_t);
-		sbus_read_flag=false;	//解开锁，中断会向2号缓冲区搬数据
-		
-		if(RC_CtrlData.remote.s1 == 3) {
-			g_robot_control_state = CONTROL_ENABLED;
-			LED_GREEN_ON(); // 激活时常亮，更直观
-			fail_counter2=0;
-		} 
-		else {
-			 fail_counter2++;
-			if(fail_counter2>=2){
-				g_robot_control_state = CONTROL_DISABLED;
-				LED_GREEN_OFF(); 
-				fail_counter2=0;
-			}
-		}
-
-		#if sbus_send_chan
-		if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY&&RC_CtrlData.remote.s2==2){
-			vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
-		}
-		#endif
-		sbus_rx_flag=false;
-		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		fail_count=0;
-  	}
-	else{
-		fail_count++;
-		if(fail_count>=2){
-			g_robot_control_state = CONTROL_DISABLED;
-			LED_GREEN_OFF();
-			fail_count = 0;
-		}
-	}		
-
-  }
-  /* USER CODE END sbus_receive */
 }
 
 
@@ -157,10 +94,11 @@ void sbus_receive(void const * argument)
 void ble_parse(uint8_t *buf)
 {
 	#if pid_speed_mode
-	    pid_inc *pid=&pid_speed;
+	    pid_pos *pid=&pid_speed_yaw;
 	#else
-	    pid_pos *pid=&pid_angle;
+	    pid_pos *pid=&pid_angle_yaw;
 	#endif
+
 	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
 		//memset(ble_rx_buffer, 0, ble_rx_buffer_size);

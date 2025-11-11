@@ -53,6 +53,8 @@ osThreadId mpu_read_taskHandle;
 osThreadId can1_rx_taskHandle;
 osThreadId sbus_rx_taskHandle;
 osMessageQId led_control_queueHandle;
+uint8_t led_control_queueBuffer[ 5 * 2 ];
+osStaticMessageQDef_t led_control_queueControlBlock;
 osMessageQId can_rx_queueHandle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,7 +110,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* definition and creation of led_control_queue */
-  osMessageQDef(led_control_queue, 5, 2);
+  osMessageQStaticDef(led_control_queue, 5, 2, led_control_queueBuffer, &led_control_queueControlBlock);
   led_control_queueHandle = osMessageCreate(osMessageQ(led_control_queue), NULL);
 
   /* definition and creation of can_rx_queue */
