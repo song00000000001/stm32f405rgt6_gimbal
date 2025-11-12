@@ -20,7 +20,7 @@ typedef struct
     uint8_t id;  
     //uint8_t  dlc;// 数据长度码  
     //uint8_t  temp;  
-    uint16_t motor_speed;
+    int16_t motor_speed;
     int16_t  motor_angle;
     //int16_t  torque_current;
 }moto_info_t;//3+2*3=9

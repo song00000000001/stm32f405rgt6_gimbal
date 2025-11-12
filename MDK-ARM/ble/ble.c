@@ -6,6 +6,7 @@
 
 uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
+uint8_t ble_tx_buffer[BLE_TX_BUF_LEN];
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -43,9 +44,9 @@ void ble_print(uint8_t* buf,uint16_t len)
 	if (len > BLE_TX_BUF_LEN) len = BLE_TX_BUF_LEN;
 
 	// 首次尝试使用 DMA
-	/*if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
+	if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
 		return;
-	} */
+	} 
 	/*
 	// 如果 DMA 忙，尝试中止当前传输并重试（任务上下文允许调用阻塞操作）
 	if (HAL_UART_AbortTransmit(ble_uart) == HAL_OK) {
@@ -61,7 +62,7 @@ void ble_print(uint8_t* buf,uint16_t len)
 	}
 	*/
 	// 最后兜底：阻塞发送，确保调试信息不会完全丢失	
-	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
+	//HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
 }
 void ble_Init(void)
 {
@@ -155,35 +156,33 @@ void ble_parse(uint8_t *buf)
 void vofa_send(int num, ...) {
     va_list args;
     va_start(args, num);
-    uint8_t  ble_txBuffer[BLE_TX_BUF_LEN];
     // 拷贝所有float参数到缓冲区
     for (int i = 0; i < num; i++) {
         float value = va_arg(args, double); // float在可变参数中会自动提升为double
-        memcpy(&ble_txBuffer[i * 4], &value, 4);
+        memcpy(&ble_tx_buffer[i * 4], &value, 4);
     }
     
     va_end(args);
     
     // 添加帧尾 0x00, 0x00, 0x80, 0x7F
     uint8_t tail = num * 4;
-    ble_txBuffer[tail] = 0x00;
-    ble_txBuffer[tail + 1] = 0x00;
-    ble_txBuffer[tail + 2] = 0x80;
-    ble_txBuffer[tail + 3] = 0x7F;
+    ble_tx_buffer[tail] = 0x00;
+    ble_tx_buffer[tail + 1] = 0x00;
+    ble_tx_buffer[tail + 2] = 0x80;
+    ble_tx_buffer[tail + 3] = 0x7F;
 
-    ble_print((uint8_t*)ble_txBuffer, tail + 4);
+    ble_print((uint8_t*)ble_tx_buffer, tail + 4);
 }
 
 void my_printf(const char *format, ...)
 {
-    char buf[BLE_TX_BUF_LEN];
     va_list args;
     va_start(args, format);
 
-    int len = vsnprintf(buf, BLE_TX_BUF_LEN, format, args);
+    int len = vsnprintf((char*)ble_tx_buffer, BLE_TX_BUF_LEN, format, args);
     if (len > 0 && len < BLE_TX_BUF_LEN)
     {
-      ble_print((uint8_t *)buf,len);
+      ble_print((uint8_t *)ble_tx_buffer,len);
     }
 
     va_end(args);

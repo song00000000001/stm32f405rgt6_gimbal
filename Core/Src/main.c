@@ -114,12 +114,6 @@ int main(void)
 	//4.can
 	can1_filter_init();
 	can2_filter_init();
-
-	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);//mcu
-	HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);//can_rx_and_pid
-	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);//sbus_check
-	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);//sbus_receive
-  
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */

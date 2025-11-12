@@ -19,10 +19,8 @@
 3:3508,id3,0x200+3,set_motor_voltage( 0x200,0,0,motor_output[0],0,&hcan1);
 4:6020,id4,0x205+3,set_motor_voltage(0x1FF,0, 0, 0, motor_output[0], &hcan2);
 */
-//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
-//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
+//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
+//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
 
 
 //全局标志区
@@ -30,14 +28,15 @@ bool sbus_rx_flag=false;
 uint8_t can_rx_flag=0;
 bool mpu_rx_flag=false;
 volatile ControlState_t g_robot_control_state = CONTROL_DISABLED;
-
+uint8_t  vofa_send_id= 2;
+ 
 //全局数据区
 volatile float led_freq=1;
 volatile uint16_t g_led_brightness = 0;
 mpu6050_raw mpu_data_global;
 moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
-
+												 
 pid_pos pid_angle_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
 	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};
 
@@ -47,57 +46,12 @@ pid_pos pid_speed_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
 pid_pos pid_angle_yaw =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
 	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};
 
-pid_pos pid_speed_yaw =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};		
+pid_pos pid_speed_yaw =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=25000,
+	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};	
+
+static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
 //任务实现区
-void mpu6050_read(void const * argument)
-{
-	/* USER CODE BEGIN mpu6050_read */
-	/* Infinite loop */
-    mpu6050_raw mpu_data;
-	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(5); 
-    static float absolute_yaw=0;
-    static float last_yaw=0;   
-	for(;;)
-	{
-		// 1. 使用vTaskDelayUntil实现精准的周期性延时
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
-		//原始数据
-		#if 0
-            MPU_Get_Accelerometer(&ax,&ay,&az);
-            MPU_Get_Gyroscope(&gx,&gy,&gz);
-        #endif    
-        mpu_dmp_get_data(&mpu_data);
-		//MPU_Get_Gyroscope(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
-		//MPU_Get_Accelerometer(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
-		//绝对yaw角度处理
-        float yaw_delta = mpu_data.yaw - last_yaw;
-        if (yaw_delta > 180.0f)
-        {
-            yaw_delta -= 360.0f; 
-        }
-        else if (yaw_delta < -180.0f)
-        {
-            yaw_delta += 360.0f; 
-        }
-        absolute_yaw+=yaw_delta;
-        last_yaw=mpu_data.yaw;
-		
-		//全局变量传递参数
-		memcpy(&mpu_data_global,&mpu_data,sizeof(mpu6050_raw));
-		mpu_data_global.yaw= absolute_yaw;
-		mpu_rx_flag =true;  //提示数据更新
-
-		//发送调试信息
-		debug_send_uart1(1);
-        
-	}
-  /* USER CODE END mpu6050_read */
-}
-
 void can1_rx(void const * argument){
 
     /* USER CODE BEGIN can1_rx */
@@ -112,33 +66,36 @@ void can1_rx(void const * argument){
 
     Filter_Init(&myComplementaryFilter[motor_id_global], 20.0f); // 20Hz截止频率
 
-    int16_t motor_output[5] = {0}; // 用于存储PID计算结果
-    mpu6050_raw mpu_data_local;
     uint8_t control_flag=0;//用来检测遥控器保护是否稳定,如果不稳定则用vofa观察1中是否会突然出现0
     for(;;)
     {
         // 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-
+		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         if(can_rx_flag){
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
             memcpy(&motor_info_global,&motor_info,sizeof(moto_info_t)*MOTOR_MAX_NUM);
-			//motor_info_global[0].motor_angle=motor_info[0].motor_angle;
-			//motor_info_global[4].motor_angle=motor_info[4].motor_angle;
-            Filter_UpdateMotor(&myComplementaryFilter[motor_id_global], motor_info_global[motor_id_global].motor_speed);
+            motor_info_global[0].motor_speed*=5;
+            motor_info_global[4].motor_speed*=5;
+			Filter_UpdateMotor(&myComplementaryFilter[0], motor_info_global[0].motor_speed);
+            Filter_UpdateMotor(&myComplementaryFilter[4], motor_info_global[4].motor_speed);
             can_rx_flag=false;
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         }
 		
-        if(0&&mpu_rx_flag){
-          memcpy(&mpu_data_local,&mpu_data_global,sizeof(mpu6050_raw));  
-          //互补滤波器融合陀螺仪和电机速度
-          mpu_data_global.gx=Filter_UpdateMPU(&myComplementaryFilter[0], mpu_data_local.gx);
-          mpu_data_global.gy=Filter_UpdateMPU(&myComplementaryFilter[4], mpu_data_local.gy);
-           
-           mpu_rx_flag=false;
+        if(mpu_rx_flag){
+            //互补滤波器融合陀螺仪和电机速度
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
+            //Filter_UpdateMPU(&myComplementaryFilter[0], mpu_data_global.gy);
+            Filter_UpdateMPU(&myComplementaryFilter[4], mpu_data_global.gz);
+            myComplementaryFilter[4].last_omega=mpu_data_global.gz;
+            mpu_rx_flag=false;
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         }
 
         // 调用PID任务，不再需要传递rx_flag
-        motor_output[motor_id_global] = pid_speed_task(
+        motor_output[motor_id_global] = 
+        pid_speed_task(
             myComplementaryFilter[motor_id_global].last_omega,//将融合后的速度传递给电机信息结构体，方便PID调用
             motor_info_global[motor_id_global].motor_angle,
             &pid_angle_yaw,
@@ -163,6 +120,7 @@ void can1_rx(void const * argument){
         }   
 
         debug_send_uart1(2);
+		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
     }
     /* USER CODE END can1_rx */
 }
@@ -180,8 +138,7 @@ void sbus_receive(void const * argument)
     {
         // 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        
-        //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+        //HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         if(sbus_rx_flag){//如果中断收到信息
             memcpy(sbus_rx_buf_t,  sbus_rx_buf,SBUS_FRAME_SIZE);
             Get_DR16_Data(sbus_rx_buf_t);
@@ -208,6 +165,8 @@ void sbus_receive(void const * argument)
             }
         }		
 
+		debug_send_uart1(4);
+		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
     }
     /* USER CODE END sbus_receive */
 }
@@ -239,7 +198,53 @@ void led_breath(void const * argument)
   }
   /* USER CODE END led_breath */
 }
-uint8_t test_buf[1];
+
+void mpu6050_read(void const * argument)
+{
+	/* USER CODE BEGIN mpu6050_read */
+	/* Infinite loop */
+    mpu6050_raw mpu_data;
+	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
+    const TickType_t xFrequency = pdMS_TO_TICKS(5); 
+    static float absolute_yaw=0;
+    static float last_yaw=0;   
+	for(;;)
+	{
+		// 1. 使用vTaskDelayUntil实现精准的周期性延时
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
+		//原始数据
+		#if 0
+            MPU_Get_Accelerometer(&ax,&ay,&az);
+            MPU_Get_Gyroscope(&gx,&gy,&gz);
+        #endif    
+        mpu_dmp_get_data(&mpu_data);
+		//MPU_Get_Gyroscope(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
+		//MPU_Get_Accelerometer(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
+		//绝对yaw角度处理
+        float yaw_delta = mpu_data.yaw - last_yaw;
+        if (yaw_delta > 180.0f)
+        {
+            yaw_delta -= 360.0f; 
+        }
+        else if (yaw_delta < -180.0f)
+        {
+            yaw_delta += 360.0f; 
+        }
+        absolute_yaw+=yaw_delta;
+        last_yaw=mpu_data.yaw;
+		
+		//全局变量传递参数
+		memcpy(&mpu_data_global,&mpu_data,sizeof(mpu6050_raw));
+		mpu_data_global.yaw= absolute_yaw;
+		mpu_rx_flag =true;  //提示数据更新
+
+		//发送调试信息
+		debug_send_uart1(1);
+		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
+	}
+  /* USER CODE END mpu6050_read */
+}
 
 void debug_send_uart1(uint8_t t){
     uint8_t id=vofa_send_id;
@@ -260,23 +265,25 @@ void debug_send_uart1(uint8_t t){
     case 1:
         #if mpu_send
             #if mpu_send_angle_gyro
-               test_buf[0]=(uint8_t)'0';
-                test_buf[0]+=(int)mpu_data_global.pitch%9;
-                ble_print((uint8_t*)test_buf,1);
 				//vofa_send(1,(float)mpu_data_global.pitch); 
                 //vofa_send(2,(float)mpu_data_global.pitch,(float)mpu_data_global.roll); 
 				//vofa_send(3,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw); 
-                //vofa_send(4,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw,(float)mpu_data_global.yaw); 
+                vofa_send(6,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw
+                ,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
+                 
             #else
                 vofa_send(3,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
-            #endif  
+            #endif 
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);				
          #endif
         break;
     case 2:
         #if pid_send
             #if pid_speed_mode 	
-                vofa_send(4,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
-                (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output);
+                vofa_send(7,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
+                (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
+				(float)motor_info_global[motor_id_global].motor_angle,(float)motor_info_global[motor_id_global].motor_speed,
+				 (float)mpu_data_global.gz	);
             #else
                 switch (motor_id)
                 {
@@ -289,16 +296,17 @@ void debug_send_uart1(uint8_t t){
                     break;
                 }          
             #endif
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif
         break;
     case 3:
         #if can_send_rx
-            vofa_send(2,(float)motor_info_global[motor_id_global].motor_angle,(float)motor_info_global[motor_id_global].motor_speed);
-        #endif
+		#endif
         break;
     case 4:
         #if sbus_send_chan
             vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
+			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif
         break;
     default:

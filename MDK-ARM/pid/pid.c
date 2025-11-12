@@ -75,8 +75,8 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
 float pid_cal_pos(pid_pos *pid)
 {
     float error = pid->target - pid->now;
-	if(fabs(error)<0.2)
-		return 0; 
+	//if(fabs(error)<0.1)
+	//	return 0; 
 
     float derivative =  -(pid->now - pid->last_now);
 	pid->last_now=pid->now;

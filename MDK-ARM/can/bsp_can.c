@@ -12,7 +12,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     {
 		HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rx_header, rx_data);
 
-        if ((rx_header.StdId == (FEEDBACK_ID_BASE+1))) //6020,id1,pitch
+        if ((rx_header.StdId == (FEEDBACK_ID_BASE+1))) //6020,id1,pitch,205+1
         {
 			can_cnt ++;
 			motor_info[0].motor_angle    = ((rx_data[0] << 8) | rx_data[1]);//motor_info[0].id= rx_header.StdId - FEEDBACK_ID_BASE; //motor_info[0].torque_current = ((rx_data[4] << 8) | rx_data[5]); 
@@ -33,7 +33,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     if (hcan->Instance == CAN2)
     {
         HAL_CAN_GetRxMessage(&hcan2, CAN_RX_FIFO0, &rx_header, rx_data);
-        if ((rx_header.StdId == (FEEDBACK_ID_BASE+3))) //6020,id4,yaw
+        if ((rx_header.StdId == (FEEDBACK_ID_BASE+3))) //6020,id4,yaw  ,    208
         {
             can_cnt ++;
             motor_info[4].motor_angle    = ((rx_data[0] << 8) | rx_data[1]);//motor_info[0].id= rx_header.StdId - FEEDBACK_ID_BASE; //motor_info[0].torque_current = ((rx_data[4] << 8) | rx_data[5]); 
