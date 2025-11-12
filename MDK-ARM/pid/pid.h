@@ -13,6 +13,7 @@ typedef struct pid_pos
 
 	float integral;
 	float integral_max;
+    float integral_threshold;
 
 	float last_error;
 	float output;

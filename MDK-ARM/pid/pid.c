@@ -31,7 +31,7 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
     {
         // 状态激活的瞬间！这是关键的重置点
         // 将当前电机的绝对位置，设定为新的目标位置
-        pid_angle->target =(float) absolute_position[motor_id] * 360.0f / 8192.0f;
+        pid_angle->target =pid_angle->now;
         
         // 清零所有PID积分和历史误差，防止旧数据影响
         pid_angle->integral = 0;
@@ -75,8 +75,30 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
 float pid_cal_pos(pid_pos *pid)
 {
     float error = pid->target - pid->now;
-	//if(fabs(error)<0.1)
-	//	return 0; 
+
+	//带死区的积分分离 (防止在0点附近抖动时积分乱跳)
+	if(fabs(error) < pid->integral_threshold) // 阈值依然是5.0
+	{
+        if(fabs(error) >= 0.1) // 在小误差区内部，再加一个积分死区
+        {
+            pid->integral += error;
+        }
+        else{
+            pid->integral = 0;
+            pid->output=0;
+            return 0; 
+        }
+	}
+	else
+	{
+		pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
+	}
+	//积分限幅
+	if (pid->integral > pid->integral_max) {
+			pid->integral = pid->integral_max;
+	} else if (pid->integral < -pid->integral_max) {
+			pid->integral = -pid->integral_max;
+	} 
 
     float derivative =  -(pid->now - pid->last_now);
 	pid->last_now=pid->now;

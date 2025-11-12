@@ -38,16 +38,16 @@ moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
 												 
 pid_pos pid_angle_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};
+	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 pid_pos pid_speed_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};									
+	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};									
 
-pid_pos pid_angle_yaw =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};
+pid_pos pid_angle_yaw =   {.Kp = 13, .Ki = 0.1, .Kd = 40,.integral_max=600,
+	.output_max = 800,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};
 
-pid_pos pid_speed_yaw =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=25000,
-	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0};	
+pid_pos pid_speed_yaw =   {.Kp = 580, .Ki = 1, .Kd = 0,.integral_max=25000,
+	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};	
 
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
@@ -73,19 +73,18 @@ void can1_rx(void const * argument){
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
 		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         if(can_rx_flag){
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
             memcpy(&motor_info_global,&motor_info,sizeof(moto_info_t)*MOTOR_MAX_NUM);
             motor_info_global[0].motor_speed*=5;
             motor_info_global[4].motor_speed*=5;
 			Filter_UpdateMotor(&myComplementaryFilter[0], motor_info_global[0].motor_speed);
-            Filter_UpdateMotor(&myComplementaryFilter[4], motor_info_global[4].motor_speed);
+            //Filter_UpdateMotor(&myComplementaryFilter[4], motor_info_global[4].motor_speed);
             can_rx_flag=false;
 			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         }
 		
         if(mpu_rx_flag){
             //互补滤波器融合陀螺仪和电机速度
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
+			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
             //Filter_UpdateMPU(&myComplementaryFilter[0], mpu_data_global.gy);
             Filter_UpdateMPU(&myComplementaryFilter[4], mpu_data_global.gz);
             myComplementaryFilter[4].last_omega=mpu_data_global.gz;
@@ -238,7 +237,7 @@ void mpu6050_read(void const * argument)
 		memcpy(&mpu_data_global,&mpu_data,sizeof(mpu6050_raw));
 		mpu_data_global.yaw= absolute_yaw;
 		mpu_rx_flag =true;  //提示数据更新
-
+        
 		//发送调试信息
 		debug_send_uart1(1);
 		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
@@ -280,21 +279,11 @@ void debug_send_uart1(uint8_t t){
     case 2:
         #if pid_send
             #if pid_speed_mode 	
-                vofa_send(7,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
+                vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
                 (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
-				(float)motor_info_global[motor_id_global].motor_angle,(float)motor_info_global[motor_id_global].motor_speed,
-				 (float)mpu_data_global.gz	);
+				(float)motor_info_global[motor_id_global].motor_speed, (float)mpu_data_global.gz);
             #else
-                switch (motor_id)
-                {
-                case 0:
-                    break;
-                case 4:
-                    vofa_send(4,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
-                    break;    
-                default:
-                    break;
-                }          
+				vofa_send(4,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
             #endif
 			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif

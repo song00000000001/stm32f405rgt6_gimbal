@@ -12,7 +12,7 @@
 #define motor_id_global 4       	 //电机id选择,目前对pid计算和信息输出有效,因为还没有设计多电机控制
 #define can_send_rx 1      				//电机读取信息输出
 
-#define pid_speed_mode 1    		//1为速度环，0为位置环
+#define pid_speed_mode 0    		//1为速度环，0为位置环
 #define pid_send 1         			//串级pid输出
 
 #define mpu_send 1      		//mpu6050输出
