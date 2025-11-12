@@ -39,7 +39,7 @@
 #if defined MOTION_DRIVER_TARGET_MSP430
 //#include "msp430.h"
 //#include "msp430_clock.h"
-#define delay_ms    delay_ms
+//#define delay_ms    delay_ms
 #define get_ms      mget_ms
 #define log_i 		printf
 #define log_e  		printf

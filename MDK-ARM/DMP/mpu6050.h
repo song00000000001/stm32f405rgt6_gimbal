@@ -5,14 +5,17 @@
 typedef struct mpu6050_raw
 {
 	/* data */
-	short ax;
-	short ay;
-	short az;
-	short gx;
-	short gy;
-	short gz;
+	float ax;
+	float ay;
+	float az;
+	float gx;
+	float gy;
+	float gz;
+	float pitch;
+	float roll;
+	float yaw;
 }mpu6050_raw;
- 
+
 #define delay_ms				HAL_Delay
 #define MPU_IIC_Init			IIC_GPIO_Init
 #define MPU_IIC_Start			IIC_Start
@@ -116,4 +119,5 @@ short MPU_Get_Temperature(void);
 uint8_t MPU_Get_Gyroscope(short *gx,short *gy,short *gz);
 uint8_t MPU_Get_Accelerometer(short *ax,short *ay,short *az);
  
+
 #endif
