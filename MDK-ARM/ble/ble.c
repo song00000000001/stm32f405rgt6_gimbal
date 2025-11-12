@@ -94,11 +94,11 @@ void ble_Init(void)
 //"0123456789012"
 void ble_parse(uint8_t *buf)
 {
-	#if pid_speed_mode
-	    pid_pos *pid=&pid_speed_yaw;
-	#else
-	    pid_pos *pid=&pid_angle_yaw;
-	#endif
+	pid_pos *pid;
+	if (pid_speed_mode)
+		pid=&pid_speed_yaw;
+	else
+	    pid=&pid_angle_yaw;
 
 	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{

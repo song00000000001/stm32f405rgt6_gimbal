@@ -59,10 +59,9 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
         // pid_angle->target += RC_CtrlData.remote.ch0 * 0.1f; // 例如：用摇杆控制目标角度
 
         // 执行串级PID计算
-        #if  pid_speed_mode
-		#else
+        if (!pid_speed_mode)
 			pid_speed->target=pid_cal_pos(pid_angle);// 角度环的输出是速度环的目标
-		#endif
+			
         return pid_cal_pos(pid_speed);             // 速度环的输出是最终的电机电压/电流
     }
     else

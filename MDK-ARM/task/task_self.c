@@ -28,8 +28,9 @@ bool sbus_rx_flag=false;
 uint8_t can_rx_flag=0;
 bool mpu_rx_flag=false;
 volatile ControlState_t g_robot_control_state = CONTROL_DISABLED;
-uint8_t  vofa_send_id= 2;
- 
+uint8_t vofa_send_id= 2;
+uint8_t pid_speed_mode= 1;    		//1为速度环，0为位置环 
+
 //全局数据区
 volatile float led_freq=1;
 volatile uint16_t g_led_brightness = 0;
@@ -150,6 +151,13 @@ void sbus_receive(void const * argument)
             else {
                 g_robot_control_state = CONTROL_DISABLED;
                 LED_GREEN_OFF(); 
+            }
+
+            if(RC_CtrlData.remote.s2 == 1) {
+                pid_speed_mode = 1;
+            } 
+            else {
+                pid_speed_mode = 0;
             }
 
             debug_send_uart1(4);
@@ -279,23 +287,13 @@ void debug_send_uart1(uint8_t t){
         break;
     case 2:
         #if pid_send
-            #if pid_speed_mode 	
-                vofa_send(7,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
+            if(pid_speed_mode)
+                vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
                 (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
-				(float)motor_info_global[motor_id_global].motor_angle,(float)motor_info_global[motor_id_global].motor_speed,
-				 (float)mpu_data_global.gz	);
-            #else
-                switch (motor_id)
-                {
-                case 0:
-                    break;
-                case 4:
-                    vofa_send(4,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
-                    break;    
-                default:
-                    break;
-                }          
-            #endif
+				(float)motor_info_global[motor_id_global].motor_speed,(float)mpu_data_global.gz	);
+            else{
+                vofa_send(6,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
+            }       
 			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif
         break;
