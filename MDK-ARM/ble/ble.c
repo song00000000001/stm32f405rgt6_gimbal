@@ -4,6 +4,7 @@
 #include "task_self.h"
 #include "stm32f4xx_hal.h"
 
+
 uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
 uint8_t ble_tx_buffer[BLE_TX_BUF_LEN];
@@ -103,17 +104,13 @@ void ble_parse(uint8_t *buf)
     else if(ble_control_id_global==2)
         pid=&pid_speed_pitch;
     else if(ble_control_id_global==3)
-        pid=&pid_angle_pitch;
-    /*    
+        pid=&pid_angle_pitch;  
     else if(ble_control_id_global==4)
         pid=&pid_speed_left_whell;  
     else if(ble_control_id_global==5)
         pid=&pid_speed_right_whell;
     else if(ble_control_id_global==6)
         pid=&pid_speed_bopandianji;
-    else if(ble_control_id_global==7)
-        pid=&pid_angle_bopandianji;
-        */
     else   
         return; 
 	
@@ -138,12 +135,12 @@ void ble_parse(uint8_t *buf)
 		else if(buf[2] == '-')
 				val = -val;
 		else
-				return;
+			return;
 
 		if(val<-1000) 
-				val=-1000;
+            val=-1000;
 		if(val>=1000) 
-				val=1000;
+            val=1000;
 		
 		switch(buf[1])
 		{

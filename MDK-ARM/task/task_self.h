@@ -35,14 +35,10 @@ extern bool mpu_rx_flag;
 extern bool sbus_rx_flag;
 extern mpu6050_raw mpu_data_global;
 extern uint8_t can_rx_flag;
-extern pid_pos pid_angle_pitch;
-extern pid_pos pid_speed_pitch;
-extern pid_pos pid_angle_yaw;
-extern pid_pos pid_speed_yaw;
+
 extern pid_pos pid_speed_left_whell;
 extern pid_pos pid_speed_right_whell;
 extern pid_pos pid_speed_bopandianji;
-extern pid_pos pid_angle_bopandianji;
 
 extern volatile float led_freq;
 extern volatile uint16_t g_led_brightness;

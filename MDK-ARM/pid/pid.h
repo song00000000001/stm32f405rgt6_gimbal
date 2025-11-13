@@ -37,8 +37,10 @@ typedef struct pid_inc
 
 //#define PID_TIM &htim1
 
-extern pid_pos pid_angle;
-extern pid_inc pid_speed;
+extern pid_pos pid_angle_pitch;
+extern pid_pos pid_speed_pitch;
+extern pid_pos pid_angle_yaw;
+extern pid_pos pid_speed_yaw;
 
 float pid_cal_pos_speed(pid_pos *pid);
 float pid_cal_pos_angle(pid_pos *pid);

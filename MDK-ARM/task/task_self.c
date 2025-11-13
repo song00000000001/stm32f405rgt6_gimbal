@@ -12,17 +12,6 @@
 
 #include "bsp_can.h"
 
-/*
-0:6020,id2,0x205+1,set_motor_voltage(0x1FF,0, motor_output[0], 0, 0, &hcan1);
-1:3508,id1,0x200+1,set_motor_voltage( 0x200,motor_output[0],0,0,0,&hcan1);
-2:3508,id2,0x200+2,set_motor_voltage( 0x200,0,motor_output[0],0,0,&hcan1);
-3:3508,id3,0x200+3,set_motor_voltage( 0x200,0,0,motor_output[0],0,&hcan1);
-4:6020,id4,0x205+3,set_motor_voltage(0x1FF,0, 0, 0, motor_output[0], &hcan2);
-*/
-//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
-//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
-
-
 //全局标志区
 bool sbus_rx_flag=false;
 uint8_t can_rx_flag=0;
@@ -36,20 +25,9 @@ volatile uint16_t g_led_brightness = 0;
 volatile uint8_t ble_control_id=0,ble_control_id_global=0;
 mpu6050_raw mpu_data_global;
 moto_info_t motor_info_global[MOTOR_MAX_NUM];
-ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
-												 
-pid_pos pid_angle_pitch =   {.Kp = 11, .Ki = 0.03, .Kd = 0,.integral_max=200,
-	.output_max = 150,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=2};
+ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];	
 
-pid_pos pid_speed_pitch =   {.Kp = 200, .Ki = 0, .Kd = 0,.integral_max=0,.k_f =110,
-	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};									
-
-pid_pos pid_angle_yaw =   {.Kp = 14.5, .Ki = 0.1, .Kd = 40,.integral_max=600,
-	.output_max = 600,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};
-
-pid_pos pid_speed_yaw =   {.Kp = 600, .Ki = 0, .Kd = 0,.integral_max=25000, .k_f=30,
-	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};	
-
+//--- left_whell and right whell and bopandianji 	
 pid_pos pid_speed_left_whell =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
     .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
@@ -57,9 +35,6 @@ pid_pos pid_speed_right_whell =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_
     .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 pid_pos pid_speed_bopandianji =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
-    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
-
-pid_pos pid_angle_bopandianji =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
     .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
@@ -111,6 +86,34 @@ void can1_rx(void const * argument){
             0
         );
 
+        motor_output[1]=
+        pid_speed_task(
+            motor_info_global[1].motor_speed,
+            0,
+            NULL,
+            &pid_speed_left_whell,
+            1
+        );
+		 /*
+        motor_output[2]=
+        pid_speed_task(
+            motor_info_global[2].motor_speed,
+            0,
+            NULL,
+            &pid_speed_right_whell,
+            2
+        );
+
+        motor_output[3]=
+        pid_speed_task(
+            motor_info_global[3].motor_speed,
+            0,
+            NULL,
+            &pid_speed_bopandianji,
+            3
+        );
+		 */
+        // 输出电压到电机
         if(g_robot_control_state == CONTROL_ENABLED) {
             set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);//pitch motor
             set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);//yaw motor
@@ -124,6 +127,82 @@ void can1_rx(void const * argument){
     }
     /* USER CODE END can1_rx */
 }
+
+void debug_send_uart1(uint8_t t){
+	switch (t)
+    {
+    case 1:
+            vofa_send(6,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw
+            ,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
+    case 2:
+		    ble_control_id_global=ble_control_id;
+            switch (ble_control_id_global)
+            {
+            case 0:
+                vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
+                (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
+                (float)mpu_data_global.gz);
+                break;
+            case 1:
+                vofa_send(6,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,
+                (float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output,
+                (float)mpu_data_global.gz);
+                break;
+            case 2:
+                vofa_send(6,(float)pid_speed_pitch.target,(float)pid_speed_pitch.now,
+                (float)(pid_speed_pitch.now - pid_speed_pitch.target),(float)pid_speed_pitch.output,
+                (float)mpu_data_global.gy);
+                break;
+            case 3:
+                vofa_send(6,(float)pid_angle_pitch.target,(float)pid_angle_pitch.now,
+                (float)(pid_angle_pitch.now - pid_angle_pitch.target),(float)pid_angle_pitch.output,
+                (float)mpu_data_global.gy);
+                break;
+            case 4:
+                vofa_send(6,(float)pid_speed_left_whell.target,(float)pid_speed_left_whell.now,
+                (float)(pid_speed_left_whell.now - pid_speed_left_whell.target),(float)pid_speed_left_whell.output,
+                (float)motor_info_global[1].motor_speed);
+                break;
+            case 5:
+                vofa_send(6,(float)pid_speed_right_whell.target,(float)pid_speed_right_whell.now,
+                (float)(pid_speed_right_whell.now - pid_speed_right_whell.target),(float)pid_speed_right_whell.output,
+                (float)motor_info_global[2].motor_speed);
+                break;
+            case 6:
+                vofa_send(6,(float)pid_speed_bopandianji.target,(float)pid_speed_bopandianji.now,
+                (float)(pid_speed_bopandianji.now - pid_speed_bopandianji.target),(float)pid_speed_bopandianji.output,
+                (float)motor_info_global[3].motor_speed);
+                break;
+            default:
+                break;
+            }
+        
+        break;
+    case 3:
+        vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
+        break;
+    case 4:
+    vofa_send(5,(float)motor_info_global[0].motor_angle,(float)motor_info_global[1].motor_angle,
+        (float)motor_info_global[2].motor_angle,(float)motor_info_global[3].motor_angle
+        ,(float)motor_info_global[4].motor_angle);
+    default:
+        break;
+    }
+}
+
+
+
+
+
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 void sbus_receive(void const * argument)
 {
@@ -152,7 +231,6 @@ void sbus_receive(void const * argument)
                 LED_GREEN_OFF(); 
             }
 
-            debug_send_uart1(4);
             sbus_rx_flag=false;
             fail_count=0;
         }
@@ -238,69 +316,9 @@ void mpu6050_read(void const * argument)
 		mpu_rx_flag =true;  //提示数据更新
         
 		//发送调试信息
-        debug_send_uart1(ble_send_id);
+        debug_send_uart1(2);
 
 	}
   /* USER CODE END mpu6050_read */
 }
 
-void debug_send_uart1(uint8_t t){
-	switch (t)
-    {
-    case 1:
-                vofa_send(6,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw
-                ,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
-    case 2:
-			ble_control_id_global=ble_control_id;
-           if (ble_control_id_global==0) {
-                vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
-                (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
-				(float)mpu_data_global.gz);
-           }
-           else if(ble_control_id_global==1){
-                vofa_send(6,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,
-                (float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output,
-                (float)mpu_data_global.gz);
-           }
-            else if(ble_control_id_global==2){
-                vofa_send(6,(float)pid_speed_pitch.target,(float)pid_speed_pitch.now,
-                (float)(pid_speed_pitch.now - pid_speed_pitch.target),(float)pid_speed_pitch.output,
-                (float)mpu_data_global.gy);
-            }
-            else if(ble_control_id_global==3){
-                vofa_send(6,(float)pid_angle_pitch.target,(float)pid_angle_pitch.now,
-                (float)(pid_angle_pitch.now - pid_angle_pitch.target),(float)pid_angle_pitch.output,
-                (float)mpu_data_global.gy);
-			}
-            /*else if(ble_control_id_global==4){
-                vofa_send(6,(float)pid_speed_left_whell.target,(float)pid_speed_left_whell.now,
-                (float)(pid_speed_left_whell.now - pid_speed_left_whell.target),(float)pid_speed_left_whell.output,
-                (float)motor_info_global[1].motor_speed);
-            }
-            else if(ble_control_id_global==5){
-                vofa_send(6,(float)pid_speed_right_whell.target,(float)pid_speed_right_whell.now,
-                (float)(pid_speed_right_whell.now - pid_speed_right_whell.target),(float)pid_speed_right_whell.output,
-                (float)motor_info_global[2].motor_speed);
-            }
-            else if(ble_control_id_global==6){
-                vofa_send(6,(float)pid_speed_bopandianji.target,(float)pid_speed_bopandianji.now,
-                (float)(pid_speed_bopandianji.now - pid_speed_bopandianji.target),(float)pid_speed_bopandianji.output,
-                (float)motor_info_global[3].motor_speed);
-            }
-            else if(ble_control_id_global==7){
-                vofa_send(6,(float)pid_angle_bopandianji.target,(float)pid_angle_bopandianji.now,
-                (float)(pid_angle_bopandianji.now - pid_angle_bopandianji.target),(float)pid_angle_bopandianji.output,
-                (float)motor_info_global[3].motor_angle);
-            }*/
-        break;
-    case 3:
-            vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
-        break;
-    case 4:
-    vofa_send(5,(float)motor_info_global[0].motor_angle,(float)motor_info_global[1].motor_angle,
-                (float)motor_info_global[2].motor_angle,(float)motor_info_global[3].motor_angle
-                ,(float)motor_info_global[4].motor_angle);
-    default:
-        break;
-    }
-}
