@@ -50,6 +50,18 @@ pid_pos pid_angle_yaw =   {.Kp = 14.5, .Ki = 0.1, .Kd = 40,.integral_max=600,
 pid_pos pid_speed_yaw =   {.Kp = 600, .Ki = 0, .Kd = 0,.integral_max=25000, .k_f=30,
 	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};	
 
+pid_pos pid_speed_left_whell =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+
+pid_pos pid_speed_right_whell =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+
+pid_pos pid_speed_bopandianji =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+
+pid_pos pid_angle_bopandianji =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
+    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
 //任务实现区
@@ -81,14 +93,15 @@ void can1_rx(void const * argument){
         }
 
         // 调用PID任务，不再需要传递rx_flag
-        motor_output[motor_id_global] = 
+        motor_output[4] = 
         pid_speed_task(
             local_gz,
-            motor_info_global[motor_id_global].motor_angle,
+            motor_info_global[4].motor_angle,
             &pid_angle_yaw,
             &pid_speed_yaw,
-            motor_id_global
+            4
         );
+
         motor_output[0]=
         pid_speed_task(
             local_gy,
@@ -99,9 +112,13 @@ void can1_rx(void const * argument){
         );
 
         if(g_robot_control_state == CONTROL_ENABLED) {
-            set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);
-            set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);
+            set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);//pitch motor
+            set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);//yaw motor
+            set_motor_voltage(0x200,motor_output[1],motor_output[2],motor_output[3],0,&hcan1);//left wheel
         }
+		else{
+			set_motor_voltage(0x200,0,0,0,0,&hcan1);//left wheel
+		}
         
 		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
     }
@@ -221,7 +238,7 @@ void mpu6050_read(void const * argument)
 		mpu_rx_flag =true;  //提示数据更新
         
 		//发送调试信息
-        debug_send_uart1(2);
+        debug_send_uart1(ble_send_id);
 
 	}
   /* USER CODE END mpu6050_read */
@@ -254,11 +271,35 @@ void debug_send_uart1(uint8_t t){
                 vofa_send(6,(float)pid_angle_pitch.target,(float)pid_angle_pitch.now,
                 (float)(pid_angle_pitch.now - pid_angle_pitch.target),(float)pid_angle_pitch.output,
                 (float)mpu_data_global.gy);
-			}  
+			}
+            /*else if(ble_control_id_global==4){
+                vofa_send(6,(float)pid_speed_left_whell.target,(float)pid_speed_left_whell.now,
+                (float)(pid_speed_left_whell.now - pid_speed_left_whell.target),(float)pid_speed_left_whell.output,
+                (float)motor_info_global[1].motor_speed);
+            }
+            else if(ble_control_id_global==5){
+                vofa_send(6,(float)pid_speed_right_whell.target,(float)pid_speed_right_whell.now,
+                (float)(pid_speed_right_whell.now - pid_speed_right_whell.target),(float)pid_speed_right_whell.output,
+                (float)motor_info_global[2].motor_speed);
+            }
+            else if(ble_control_id_global==6){
+                vofa_send(6,(float)pid_speed_bopandianji.target,(float)pid_speed_bopandianji.now,
+                (float)(pid_speed_bopandianji.now - pid_speed_bopandianji.target),(float)pid_speed_bopandianji.output,
+                (float)motor_info_global[3].motor_speed);
+            }
+            else if(ble_control_id_global==7){
+                vofa_send(6,(float)pid_angle_bopandianji.target,(float)pid_angle_bopandianji.now,
+                (float)(pid_angle_bopandianji.now - pid_angle_bopandianji.target),(float)pid_angle_bopandianji.output,
+                (float)motor_info_global[3].motor_angle);
+            }*/
         break;
     case 3:
             vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
         break;
+    case 4:
+    vofa_send(5,(float)motor_info_global[0].motor_angle,(float)motor_info_global[1].motor_angle,
+                (float)motor_info_global[2].motor_angle,(float)motor_info_global[3].motor_angle
+                ,(float)motor_info_global[4].motor_angle);
     default:
         break;
     }

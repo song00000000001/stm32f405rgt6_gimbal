@@ -104,11 +104,20 @@ void ble_parse(uint8_t *buf)
         pid=&pid_speed_pitch;
     else if(ble_control_id_global==3)
         pid=&pid_angle_pitch;
-    else
+    /*    
+    else if(ble_control_id_global==4)
+        pid=&pid_speed_left_whell;  
+    else if(ble_control_id_global==5)
+        pid=&pid_speed_right_whell;
+    else if(ble_control_id_global==6)
+        pid=&pid_speed_bopandianji;
+    else if(ble_control_id_global==7)
+        pid=&pid_angle_bopandianji;
+        */
+    else   
         return; 
 	
-
-	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
+	if(buf==NULL||buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
 		//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
 		return;

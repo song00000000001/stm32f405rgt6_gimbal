@@ -22,6 +22,7 @@
 
 
     //debug用
+#define ble_send_id  2        //发送调试信息选择
 #define ble_uart_send_debug 1       //初始化发送一些信息
 #define ble_send_rx_buf_debug 0    //把串口1收到的发出来
 #define sbus_send_rx_buf_debug 0     //把串口2收到的发出来
@@ -38,6 +39,11 @@ extern pid_pos pid_angle_pitch;
 extern pid_pos pid_speed_pitch;
 extern pid_pos pid_angle_yaw;
 extern pid_pos pid_speed_yaw;
+extern pid_pos pid_speed_left_whell;
+extern pid_pos pid_speed_right_whell;
+extern pid_pos pid_speed_bopandianji;
+extern pid_pos pid_angle_bopandianji;
+
 extern volatile float led_freq;
 extern volatile uint16_t g_led_brightness;
 extern volatile ControlState_t g_robot_control_state;
