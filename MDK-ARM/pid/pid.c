@@ -7,6 +7,7 @@
 
 LowPassFilter myFilter={.alpha=0.1,.previous_output=0};
 
+int16_t g_compensation=3000;
 
 float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id)
 {
@@ -62,14 +63,14 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
             if(motor_id==4)
                 pid_speed->target=pid_cal_pos_angle(pid_angle);// 角度环的输出是速度环的目标
             else if(motor_id==0)
-                pid_speed->target=-pid_cal_pos_angle(pid_angle);
+                pid_speed->target=-pid_cal_pos_angle_pitch(pid_angle);
             else
                 return 0;	 
 		#endif
         if(motor_id==4)
             return pid_cal_pos_speed(pid_speed);             
         else if(motor_id==0)
-            return (pid_cal_pos_speed(pid_speed)+4900);
+            return (pid_cal_pos_speed(pid_speed)+g_compensation);
 		else
 			return 0;
     }
@@ -175,7 +176,6 @@ float pid_cal_pos_angle_pitch(pid_pos *pid)
             pid->integral += error;
         }
         else{
-            pid->integral = 0;
             return pid->Ki*pid->integral; 
         }
 	}
