@@ -38,13 +38,13 @@ mpu6050_raw mpu_data_global;
 moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
 												 
-pid_pos pid_angle_pitch =   {.Kp = 13, .Ki = 0.04, .Kd = 0,.integral_max=800,
-	.output_max = 200,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=2};
+pid_pos pid_angle_pitch =   {.Kp = 11, .Ki = 0.03, .Kd = 0,.integral_max=200,
+	.output_max = 150,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=2};
 
 pid_pos pid_speed_pitch =   {.Kp = 200, .Ki = 0, .Kd = 0,.integral_max=0,.k_f =110,
 	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};									
 
-pid_pos pid_angle_yaw =   {.Kp = 13, .Ki = 0.1, .Kd = 40,.integral_max=600,
+pid_pos pid_angle_yaw =   {.Kp = 14.5, .Ki = 0.1, .Kd = 40,.integral_max=600,
 	.output_max = 600,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};
 
 pid_pos pid_speed_yaw =   {.Kp = 600, .Ki = 0, .Kd = 0,.integral_max=25000, .k_f=30,

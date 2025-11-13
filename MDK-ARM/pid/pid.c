@@ -7,7 +7,7 @@
 
 LowPassFilter myFilter={.alpha=0.1,.previous_output=0};
 
-int16_t g_compensation=3000;
+int16_t g_compensation=4900;
 
 float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id)
 {
