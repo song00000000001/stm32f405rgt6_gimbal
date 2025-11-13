@@ -48,10 +48,20 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-osThreadId breathing_led_tHandle;
+uint32_t defaultTaskBuffer[ 128 ];
+osStaticThreadDef_t defaultTaskControlBlock;
+osThreadId led_breath_taskHandle;
+uint32_t led_breath_taskBuffer[ 128 ];
+osStaticThreadDef_t led_breath_taskControlBlock;
 osThreadId mpu_read_taskHandle;
-osThreadId can1_rx_taskHandle;
+uint32_t mpu_read_taskBuffer[ 128 ];
+osStaticThreadDef_t mpu_read_taskControlBlock;
+osThreadId pid_calc_taskHandle;
+uint32_t pid_calc_taskBuffer[ 128 ];
+osStaticThreadDef_t pid_calc_taskControlBlock;
 osThreadId sbus_rx_taskHandle;
+uint32_t sbus_rx_taskBuffer[ 128 ];
+osStaticThreadDef_t sbus_rx_taskControlBlock;
 osMessageQId led_control_queueHandle;
 uint8_t led_control_queueBuffer[ 5 * 2 ];
 osStaticMessageQDef_t led_control_queueControlBlock;
@@ -65,7 +75,7 @@ osMessageQId can_rx_queueHandle;
 void StartDefaultTask(void const * argument);
 void led_breath(void const * argument);
 void mpu6050_read(void const * argument);
-void can1_rx(void const * argument);
+void pid_calc(void const * argument);
 void sbus_receive(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -123,23 +133,23 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of breathing_led_t */
-  osThreadDef(breathing_led_t, led_breath, osPriorityIdle, 0, 128);
-  breathing_led_tHandle = osThreadCreate(osThread(breathing_led_t), NULL);
+  /* definition and creation of led_breath_task */
+  osThreadStaticDef(led_breath_task, led_breath, osPriorityIdle, 0, 128, led_breath_taskBuffer, &led_breath_taskControlBlock);
+  led_breath_taskHandle = osThreadCreate(osThread(led_breath_task), NULL);
 
   /* definition and creation of mpu_read_task */
-  osThreadDef(mpu_read_task, mpu6050_read, osPriorityNormal, 0, 128);
+  osThreadStaticDef(mpu_read_task, mpu6050_read, osPriorityNormal, 0, 128, mpu_read_taskBuffer, &mpu_read_taskControlBlock);
   mpu_read_taskHandle = osThreadCreate(osThread(mpu_read_task), NULL);
 
-  /* definition and creation of can1_rx_task */
-  osThreadDef(can1_rx_task, can1_rx, osPriorityAboveNormal, 0, 128);
-  can1_rx_taskHandle = osThreadCreate(osThread(can1_rx_task), NULL);
+  /* definition and creation of pid_calc_task */
+  osThreadStaticDef(pid_calc_task, pid_calc, osPriorityAboveNormal, 0, 128, pid_calc_taskBuffer, &pid_calc_taskControlBlock);
+  pid_calc_taskHandle = osThreadCreate(osThread(pid_calc_task), NULL);
 
   /* definition and creation of sbus_rx_task */
-  osThreadDef(sbus_rx_task, sbus_receive, osPriorityHigh, 0, 128);
+  osThreadStaticDef(sbus_rx_task, sbus_receive, osPriorityHigh, 0, 128, sbus_rx_taskBuffer, &sbus_rx_taskControlBlock);
   sbus_rx_taskHandle = osThreadCreate(osThread(sbus_rx_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -202,23 +212,22 @@ __weak void mpu6050_read(void const * argument)
   /* USER CODE END mpu6050_read */
 }
 
-/* USER CODE BEGIN Header_can1_rx */
+/* USER CODE BEGIN Header_pid_calc */
 /**
-* @brief Function implementing the can1_rx_task thread.
+* @brief Function implementing the pid_calc_task thread.
 * @param argument: Not used
 * @retval None
 */
-
-/* USER CODE END Header_can1_rx */
-__weak void can1_rx(void const * argument)
+/* USER CODE END Header_pid_calc */
+__weak void pid_calc(void const * argument)
 {
-  /* USER CODE BEGIN can1_rx */
+  /* USER CODE BEGIN pid_calc */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END can1_rx */
+  /* USER CODE END pid_calc */
 }
 
 /* USER CODE BEGIN Header_sbus_receive */
