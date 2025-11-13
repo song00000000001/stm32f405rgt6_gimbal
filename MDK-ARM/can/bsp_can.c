@@ -15,8 +15,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         if ((rx_header.StdId == (FEEDBACK_ID_BASE+1))) //6020,id1,pitch,205+1
         {
 			can_cnt ++;
-			motor_info[0].motor_angle    = ((rx_data[0] << 8) | rx_data[1]);//motor_info[0].id= rx_header.StdId - FEEDBACK_ID_BASE; //motor_info[0].torque_current = ((rx_data[4] << 8) | rx_data[5]); 
-			motor_info[0].motor_speed    = ((rx_data[2] << 8) | rx_data[3]);//motor_info[0].dlc=rx_header.DLC;//motor_info[0].temp           =   rx_data[6];
+			motor_info[0].motor_angle    = ((rx_data[0] << 8) | rx_data[1]);
+            motor_info[0].motor_speed    = ((rx_data[2] << 8) | rx_data[3]);
             can_rx_flag=1;
         }
         if(rx_header.StdId <= (CAN_3510Moto_ID+3) 
@@ -24,7 +24,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         )
         {
         can_cnt ++;
-        uint8_t index = rx_header.StdId-CAN_3510Moto_ID;//rx_header.StdId - FEEDBACK_ID_BASE; // get motor index by can_id
+        uint8_t index = rx_header.StdId-CAN_3510Moto_ID;
         motor_info[index].motor_angle    = ((rx_data[0] << 8) | rx_data[1]);
         motor_info[index].motor_speed    = ((rx_data[2] << 8) | rx_data[3]);
         }
@@ -42,7 +42,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         }
     }
     
-    if (can_cnt == 1000)
+    if (can_cnt == 2000)
     {
         can_cnt = 0;
         //LED_GREEN_TOGGLE(); // green led blink indicate can comunication successful 

@@ -18,6 +18,9 @@ typedef struct pid_pos
 	float last_error;
 	float output;
 	float output_max;
+
+    float target_delta;
+    float k_ff;
 }pid_pos;
 
 typedef struct pid_inc

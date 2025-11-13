@@ -20,8 +20,7 @@
 4:6020,id4,0x205+3,set_motor_voltage(0x1FF,0, 0, 0, motor_output[0], &hcan2);
 */
 //HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
-//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
-
+//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_11);
 
 //全局标志区
 bool sbus_rx_flag=false;
@@ -36,18 +35,18 @@ volatile uint16_t g_led_brightness = 0;
 mpu6050_raw mpu_data_global;
 moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
-												 
-pid_pos pid_angle_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+float gravity_feedforward=0,k_g_pitch = 40.0f;												 
+pid_pos pid_angle_pitch =   {.Kp = 10, .Ki = 0.03, .Kd = 0,.integral_max=100/0.03,.k_ff=0,.target_delta=-280,
+	.output_max = 200,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=2};
 
-pid_pos pid_speed_pitch =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0,
-	.output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};									
+pid_pos pid_speed_pitch =   {.Kp = 400, .Ki = 1, .Kd = 0,.integral_max=25000,.k_ff=0,
+	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};									
 
-pid_pos pid_angle_yaw =   {.Kp = 13, .Ki = 0.1, .Kd = 40,.integral_max=600,
-	.output_max = 800,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};
+pid_pos pid_angle_yaw =   {.Kp = 12, .Ki = 0.1, .Kd = 40,.integral_max=600,.k_ff=0,
+	.output_max = 200,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};
 
-pid_pos pid_speed_yaw =   {.Kp = 580, .Ki = 1, .Kd = 0,.integral_max=25000,
-	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};	
+pid_pos pid_speed_yaw =   {.Kp = 400, .Ki = 1, .Kd = 0,.integral_max=25000,.k_ff=30,
+    .output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};	
 
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
@@ -60,54 +59,64 @@ void pid_calc(void const * argument){
 
     /* Infinite loop */
     //初始化互补滤波器
-    myComplementaryFilter[motor_id_global] .alpha=0.98;
-    myComplementaryFilter[motor_id_global].last_omega=0;
-    myComplementaryFilter[motor_id_global].tau=0.0f;
-    Filter_Init(&myComplementaryFilter[motor_id_global], 20.0f); // 20Hz截止频率
+    myComplementaryFilter[0] .alpha=0.98;
+    myComplementaryFilter[0].last_omega=0;
+    myComplementaryFilter[0].tau=0.0f;
+    myComplementaryFilter[4] .alpha=0.98;
+    myComplementaryFilter[4].last_omega=0;
+    myComplementaryFilter[4].tau=0.0f;
+    Filter_Init(&myComplementaryFilter[0], 20.0f); // 20Hz截止频率
+    Filter_Init(&myComplementaryFilter[4], 20.0f); // 20Hz截止频率
     uint8_t control_flag=0;//用来检测遥控器保护是否稳定,如果不稳定则用vofa观察1中是否会突然出现0
     for(;;)
     {
         // 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         if(can_rx_flag){
             memcpy(&motor_info_global,&motor_info,sizeof(moto_info_t)*MOTOR_MAX_NUM);
+
             motor_info_global[0].motor_speed*=5;
             motor_info_global[4].motor_speed*=5;
-			Filter_UpdateMotor(&myComplementaryFilter[0], motor_info_global[0].motor_speed);
+			//Filter_UpdateMotor(&myComplementaryFilter[0], motor_info_global[0].motor_speed);
             //Filter_UpdateMotor(&myComplementaryFilter[4], motor_info_global[4].motor_speed);
             can_rx_flag=false;
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         }
 		
         if(mpu_rx_flag){
             //互补滤波器融合陀螺仪和电机速度
-			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
-            //Filter_UpdateMPU(&myComplementaryFilter[0], mpu_data_global.gy);
+            Filter_UpdateMPU(&myComplementaryFilter[0], mpu_data_global.gy);
             Filter_UpdateMPU(&myComplementaryFilter[4], mpu_data_global.gz);
             myComplementaryFilter[4].last_omega=mpu_data_global.gz;
             mpu_rx_flag=false;
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         }
 
         // 调用PID任务，不再需要传递rx_flag
-        motor_output[motor_id_global] = 
+        motor_output[4] = 
         pid_speed_task(
-            myComplementaryFilter[motor_id_global].last_omega,//将融合后的速度传递给电机信息结构体，方便PID调用
-            motor_info_global[motor_id_global].motor_angle,
+            myComplementaryFilter[4].last_omega,//将融合后的速度传递给电机信息结构体，方便PID调用
+            motor_info_global[4].motor_angle,
             &pid_angle_yaw,
             &pid_speed_yaw,
-            motor_id_global
+            4
+        );
+
+        motor_output[0] = 
+        pid_speed_task(
+            myComplementaryFilter[0].last_omega,//将融合后的速度传递给电机信息结构体，方便PID调用
+            -motor_info_global[0].motor_angle,
+            &pid_angle_pitch,
+            &pid_speed_pitch,
+            0
         );
         
         control_flag=0;	
         if(g_robot_control_state == CONTROL_ENABLED) {
-            switch (motor_id_global)
+            switch (pid_yaw_pitch)
             {
             case 0:
-                set_motor_voltage(0x1FF,0, motor_output[0], 0, 0, &hcan1);
+                set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);
                 break;
-            case 4:
+            case 1:
                 set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);
                 break;    
             default:
@@ -117,7 +126,6 @@ void pid_calc(void const * argument){
         }   
 
         debug_send_uart1(2);
-		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
     }
     /* USER CODE END can1_rx */
 }
@@ -135,7 +143,6 @@ void sbus_receive(void const * argument)
     {
         // 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-        //HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         if(sbus_rx_flag){//如果中断收到信息
             memcpy(sbus_rx_buf_t,  sbus_rx_buf,SBUS_FRAME_SIZE);
             Get_DR16_Data(sbus_rx_buf_t);
@@ -163,7 +170,6 @@ void sbus_receive(void const * argument)
         }		
 
 		debug_send_uart1(4);
-		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
     }
     /* USER CODE END sbus_receive */
 }
@@ -187,7 +193,7 @@ void led_breath(void const * argument)
             
         // 3. 更新全局亮度变量 (供PWM中断使用)
         // 这个赋值是原子的，所以不需要互斥锁
-            g_led_brightness = brightness; 
+        g_led_brightness = brightness; 
         
         // 4. 根据当前周期延时
 	    osDelay(breath_period_ms);//100/5=20,20*50=1000
@@ -209,7 +215,6 @@ void mpu6050_read(void const * argument)
 	{
 		// 1. 使用vTaskDelayUntil实现精准的周期性延时
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
 		//原始数据
 		#if 0
             MPU_Get_Accelerometer(&ax,&ay,&az);
@@ -238,7 +243,6 @@ void mpu6050_read(void const * argument)
         
 		//发送调试信息
 		debug_send_uart1(1);
-		//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
 	}
   /* USER CODE END mpu6050_read */
 }
@@ -262,28 +266,33 @@ void debug_send_uart1(uint8_t t){
     case 1:
         #if mpu_send
             #if mpu_send_angle_gyro
-				//vofa_send(1,(float)mpu_data_global.pitch); 
-                //vofa_send(2,(float)mpu_data_global.pitch,(float)mpu_data_global.roll); 
-				//vofa_send(3,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw); 
                 vofa_send(6,(float)mpu_data_global.pitch,(float)mpu_data_global.roll,(float)mpu_data_global.yaw
                 ,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
                  
             #else
                 vofa_send(3,(float)mpu_data_global.gx,(float)mpu_data_global.gy,(float)mpu_data_global.gz);
             #endif 
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);				
          #endif
         break;
     case 2:
         #if pid_send
             #if pid_speed_mode 	
-                vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
-                (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
-				(float)motor_info_global[motor_id_global].motor_speed, (float)mpu_data_global.gz);
+                #if pid_yaw_pitch
+                    vofa_send(6,(float)pid_speed_yaw.target,(float)pid_speed_yaw.now,
+                    (float)(pid_speed_yaw.now - pid_speed_yaw.target),(float)pid_speed_yaw.output,
+                    (float)motor_info_global[4].motor_speed, (float)mpu_data_global.gz);
+                #else
+                    vofa_send(6,(float)pid_speed_pitch.target,(float)pid_speed_pitch.now,
+                    (float)(pid_speed_pitch.now - pid_speed_pitch.target),(float)pid_speed_pitch.output,
+                    (float)motor_info_global[0].motor_speed, (float)mpu_data_global.gy);
+                #endif
             #else
-				vofa_send(4,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
+                #if pid_yaw_pitch
+                    vofa_send(4,(float)pid_angle_yaw.target,(float)pid_angle_yaw.now,(float)(pid_angle_yaw.now - pid_angle_yaw.target),(float)pid_angle_yaw.output);
+                #else    
+                    vofa_send(5,(float)pid_angle_pitch.target,(float)pid_angle_pitch.now,(float)(pid_angle_pitch.now - pid_angle_pitch.target),(float)pid_angle_pitch.output,(float)gravity_feedforward);
+                #endif
             #endif
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif
         break;
     case 3:
@@ -293,7 +302,6 @@ void debug_send_uart1(uint8_t t){
     case 4:
         #if sbus_send_chan
             vofa_send(3,(float)RC_CtrlData.remote.ch0,(float)RC_CtrlData.remote.s1,(float)RC_CtrlData.remote.s2);
-			//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_10);
         #endif
         break;
     default:

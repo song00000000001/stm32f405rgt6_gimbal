@@ -43,7 +43,7 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
     }
 
     // --- 3. 计算当前位置和速度 ---
-    pid_angle->now = (float)absolute_position[motor_id] * 360.0f / 8192.0f+140.0f;
+    pid_angle->now = (float)absolute_position[motor_id] * 360.0f / 8192.0f+140.0f+pid_angle->target_delta;
 	#if filter_enable
 		pid_speed->now =	filterValue(&myFilter,speed);
 	#else	
@@ -58,11 +58,24 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
         // 这里可以加入从遥控器更新 target 的逻辑
         // pid_angle->target += RC_CtrlData.remote.ch0 * 0.1f; // 例如：用摇杆控制目标角度
 
-        // 执行串级PID计算
+        // 执行串级PID计算,角度环输出给速度环
         if (!pid_speed_mode)
 			pid_speed->target=pid_cal_pos(pid_angle);// 角度环的输出是速度环的目标
-			
-        return pid_cal_pos(pid_speed);             // 速度环的输出是最终的电机电压/电流
+        // 计算速度环,输出最终的电机电压/电流   
+		if(motor_id==0){
+            pid_cal_pos(pid_speed);
+            // --- 增加重力前馈补偿 ---,
+            gravity_feedforward = 100*k_g_pitch * cosf(pid_angle->now * DEG_TO_RAD); // 角度转弧度
+            pid_speed->output+= gravity_feedforward;
+            if (pid_speed->output > pid_speed->output_max) pid_speed->output = pid_speed->output_max;
+            if (pid_speed->output < -pid_speed->output_max) pid_speed->output = -pid_speed->output_max;
+
+            return pid_speed->output;
+        }
+        else if(motor_id==4)	
+            return pid_cal_pos(pid_speed);             
+		else
+			 return 0;
     }
     else
     {
@@ -83,14 +96,14 @@ float pid_cal_pos(pid_pos *pid)
             pid->integral += error;
         }
         else{
-            pid->integral = 0;
-            pid->output=0;
+            //pid->integral = 0;
+            //pid->output=0;
             return 0; 
         }
 	}
 	else
 	{
-		pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
+		//pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
 	}
 	//积分限幅
 	if (pid->integral > pid->integral_max) {
@@ -104,6 +117,9 @@ float pid_cal_pos(pid_pos *pid)
 
 	//计算输出
 	pid->output = pid->Kp * error + pid->Ki * pid->integral + pid->Kd * derivative;
+
+    //前馈
+    pid->output+=pid->k_ff * pid->target; // K_ff 是前馈系数
 
 	//输出限幅
     if (pid->output > pid->output_max) pid->output = pid->output_max;

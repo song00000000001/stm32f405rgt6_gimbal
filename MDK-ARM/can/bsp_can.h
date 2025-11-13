@@ -17,7 +17,6 @@
 
 typedef struct
 {
-    uint8_t id;  
     //uint8_t  dlc;// 数据长度码  
     //uint8_t  temp;  
     int16_t motor_speed;
