@@ -94,11 +94,19 @@ void ble_Init(void)
 //"0123456789012"
 void ble_parse(uint8_t *buf)
 {
-	#if pid_speed_mode
-	    pid_pos *pid=&pid_speed_yaw;
-	#else
-	    pid_pos *pid=&pid_angle_yaw;
-	#endif
+    pid_pos *pid;
+	pid=&pid_speed_yaw;
+	if(ble_control_id_global==0)
+        pid=&pid_speed_yaw;
+	else if(ble_control_id_global==1)
+        pid=&pid_angle_yaw;    
+    else if(ble_control_id_global==2)
+        pid=&pid_speed_pitch;
+    else if(ble_control_id_global==3)
+        pid=&pid_angle_pitch;
+    else
+        return; 
+	
 
 	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
@@ -145,6 +153,9 @@ void ble_parse(uint8_t *buf)
 			case 'L':
 				led_freq=val;
 				break;
+            case 'g':
+                ble_control_id= (uint8_t)val;
+                break;  
 			default:
 					break;
 		}

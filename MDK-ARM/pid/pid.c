@@ -55,15 +55,23 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
 	// --- 4. 只有在使能状态下才计算并返回PID输出 ---
     if (g_robot_control_state == CONTROL_ENABLED)
     {
-        // 这里可以加入从遥控器更新 target 的逻辑
-        // pid_angle->target += RC_CtrlData.remote.ch0 * 0.1f; // 例如：用摇杆控制目标角度
 
         // 执行串级PID计算
         #if  pid_speed_mode
 		#else
-			pid_speed->target=pid_cal_pos(pid_angle);// 角度环的输出是速度环的目标
+            if(motor_id==4)
+                pid_speed->target=pid_cal_pos_angle(pid_angle);// 角度环的输出是速度环的目标
+            else if(motor_id==0)
+                pid_speed->target=-pid_cal_pos_angle(pid_angle);
+            else
+                return 0;	 
 		#endif
-        return pid_cal_pos(pid_speed);             // 速度环的输出是最终的电机电压/电流
+        if(motor_id==4)
+            return pid_cal_pos_speed(pid_speed);             
+        else if(motor_id==0)
+            return (pid_cal_pos_speed(pid_speed)+4900);
+		else
+			return 0;
     }
     else
     {
@@ -72,7 +80,49 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
     }
 }
 
-float pid_cal_pos(pid_pos *pid)
+float pid_cal_pos_speed(pid_pos *pid)
+{
+    float error = pid->target - pid->now;
+
+	//带死区的积分分离 (防止在0点附近抖动时积分乱跳)
+	if(fabs(error) < pid->integral_threshold) // 阈值依然是5.0
+	{
+        if(fabs(error) >= 0.1) // 在小误差区内部，再加一个积分死区
+        {
+            pid->integral += error;
+        }
+        else{
+            pid->integral = 0;
+            pid->output=0;
+            return 0; 
+        }
+	}
+	else
+	{
+		pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
+	}
+	//积分限幅
+	if (pid->integral > pid->integral_max) {
+		pid->integral = pid->integral_max;
+	} else if (pid->integral < -pid->integral_max) {
+		pid->integral = -pid->integral_max;
+	} 
+
+    float derivative =  -(pid->now - pid->last_now);
+	pid->last_now=pid->now;
+
+	//计算输出
+	pid->output = pid->Kp * error + pid->Ki * pid->integral + pid->Kd * derivative+pid->k_f*pid->target;
+
+	//输出限幅
+    if (pid->output > pid->output_max) pid->output = pid->output_max;
+    if (pid->output < -pid->output_max) pid->output = -pid->output_max;
+	
+    return pid->output;
+}
+
+
+float pid_cal_pos_angle(pid_pos *pid)
 {
     float error = pid->target - pid->now;
 
@@ -112,7 +162,46 @@ float pid_cal_pos(pid_pos *pid)
 	
     return pid->output;
 }
+ 
+float pid_cal_pos_angle_pitch(pid_pos *pid)
+{
+    float error = pid->target - pid->now;
 
+	//带死区的积分分离 (防止在0点附近抖动时积分乱跳)
+	if(fabs(error) < pid->integral_threshold) // 阈值依然是5.0
+	{
+        if(fabs(error) >= 0.1) // 在小误差区内部，再加一个积分死区
+        {
+            pid->integral += error;
+        }
+        else{
+            pid->integral = 0;
+            return pid->Ki*pid->integral; 
+        }
+	}
+	else
+	{
+		pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
+	}
+	//积分限幅
+	if (pid->integral > pid->integral_max) {
+			pid->integral = pid->integral_max;
+	} else if (pid->integral < -pid->integral_max) {
+			pid->integral = -pid->integral_max;
+	} 
+
+    float derivative =  -(pid->now - pid->last_now);
+	pid->last_now=pid->now;
+
+	//计算输出
+	pid->output = pid->Kp * error + pid->Ki * pid->integral + pid->Kd * derivative;
+
+	//输出限幅
+    if (pid->output > pid->output_max) pid->output = pid->output_max;
+    if (pid->output < -pid->output_max) pid->output = -pid->output_max;
+	
+    return pid->output;
+}
 
 float pid_cal_inc(pid_inc *pid)
 {
