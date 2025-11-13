@@ -37,9 +37,9 @@ moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
 float gravity_feedforward=0,k_g_pitch = 40.0f;												 
 pid_pos pid_angle_pitch =   {.Kp = 10, .Ki = 0.03, .Kd = 0,.integral_max=100/0.03,.k_ff=0,.target_delta=-280,
-	.output_max = 200,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=2};
+	.output_max = 200,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=10};
 
-pid_pos pid_speed_pitch =   {.Kp = 400, .Ki = 1, .Kd = 0,.integral_max=25000,.k_ff=0,
+pid_pos pid_speed_pitch =   {.Kp = 400, .Ki = 0, .Kd = 0,.integral_max=25000,.k_ff=0,
 	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};									
 
 pid_pos pid_angle_yaw =   {.Kp = 12, .Ki = 0.1, .Kd = 40,.integral_max=600,.k_ff=0,

@@ -7,7 +7,7 @@ typedef struct pid_pos
 {
 	float Kp,Ki,Kd;
 
-	float target;
+	float target,last_target;
 	float now;
 	float last_now;
 

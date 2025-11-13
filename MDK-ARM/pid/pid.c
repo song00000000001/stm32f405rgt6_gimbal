@@ -87,30 +87,46 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
 float pid_cal_pos(pid_pos *pid)
 {
     float error = pid->target - pid->now;
+    // --- 推荐的积分逻辑 ---
+    // 检查是否有大的目标变化，或者系统是否刚使能。
+    // 如果是，可能需要重置积分，以防止旧的积分值影响新的控制过程。
+    // 这一步是可选的，但可以增加鲁棒性。
+    if (fabs(pid->last_target-pid->target) > 20.0f) // 目标变化超过20度
+    {
+         pid->integral = 0;
+    }
+    pid->last_target = pid->target;
+    
+    // 1. 积分分离：只有当误差较小时（在 integral_threshold 内），才激活积分项的计算。
+    if(fabs(error) < pid->integral_threshold)
+    {
+        pid->integral += error; // 持续累积
+    }
+    // 当误差较大时，我们不累积也不清零，让积分项保持原样。
 
-	//带死区的积分分离 (防止在0点附近抖动时积分乱跳)
-	if(fabs(error) < pid->integral_threshold) // 阈值依然是5.0
-	{
-        if(fabs(error) >= 0.1) // 在小误差区内部，再加一个积分死区
+    // 2. 积分限幅：防止积分饱和。这是必须的。
+    if (pid->integral > pid->integral_max) {
+         pid->integral = pid->integral_max;
+    } else if (pid->integral < -pid->integral_max) {
+         pid->integral = -pid->integral_max;
+    }
+
+    // 3. 增加输出死区：当误差极小时，我们不再清零积分，而是直接对输出做处理。
+    //    这可以防止电机在目标点附近因为微小的P, I, D计算结果而“嗡嗡”作响。
+    if(fabs(error) < 0.1) // 这是你原来的死区
+    {
+        // 如果误差非常小，但积分项已经累积了足够的值来对抗重力，
+        // 我们不希望总输出为0。
+        // 所以我们只判断P和D项的和是否可以忽略。
+        float p_d_output = pid->Kp * error + pid->Kd * (-(pid->now - pid->last_now));
+        
+        // 如果P和D的贡献很小，并且误差也很小，就只输出I项来维持力矩
+        if (fabs(p_d_output) < 50.0f) // 这个阈值需要调试，代表除了积分外的输出大小
         {
-            pid->integral += error;
+             pid->last_now = pid->now; // 别忘了更新last_now
+             return pid->Ki * pid->integral; // 只输出积分项
         }
-        else{
-            //pid->integral = 0;
-            //pid->output=0;
-            return 0; 
-        }
-	}
-	else
-	{
-		//pid->integral = 0;//积分清零,防止饱和后意外无法归零导致陷阱点出现
-	}
-	//积分限幅
-	if (pid->integral > pid->integral_max) {
-			pid->integral = pid->integral_max;
-	} else if (pid->integral < -pid->integral_max) {
-			pid->integral = -pid->integral_max;
-	} 
+    }
 
     float derivative =  -(pid->now - pid->last_now);
 	pid->last_now=pid->now;
