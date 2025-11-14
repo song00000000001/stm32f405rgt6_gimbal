@@ -9,7 +9,10 @@
 //宏定义区
 
     //切换输出用
-#define motor_id_global 4       	 //电机id选择,目前对pid计算和信息输出有效,因为还没有设计多电机控制
+#define bopan_debug 0        //调试拨盘电机时，跳过单发连发逻辑
+
+    //任务周期定义
+
 #define can_send_rx 1      				//电机读取信息输出
 
 #define pid_speed_mode 0    		//1为速度环，0为位置环
@@ -39,6 +42,7 @@ extern uint8_t can_rx_flag;
 extern pid_pos pid_speed_left_whell;
 extern pid_pos pid_speed_right_whell;
 extern pid_pos pid_speed_bopandianji;
+extern pid_pos pid_angle_bopamdianji;
 
 extern volatile float led_freq;
 extern volatile uint16_t g_led_brightness;

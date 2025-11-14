@@ -29,17 +29,21 @@ volatile uint8_t ble_control_id=0,ble_control_id_global=0;
 mpu6050_raw mpu_data_global;
 moto_info_t motor_info_global[MOTOR_MAX_NUM];
 ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];	
+uint16_t bopan_delta_angle=1440;    //拨盘电机每次单发的角度增量，单位：编码器计数值
 
 //--- left_whell and right whell and bopandianji 	
-pid_pos pid_speed_left_whell =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+pid_pos pid_speed_left_whell =   {.Kp = 12, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
     .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
-pid_pos pid_speed_right_whell =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+pid_pos pid_speed_right_whell =  {.Kp = 12, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
     .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
-pid_pos pid_speed_bopandianji =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
+pid_pos pid_speed_bopandianji =  {.Kp = 7, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
     .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
+pid_pos pid_angle_bopamdianji =  {.Kp = 10, .Ki = 0, .Kd = 2,.integral_max=0, .k_f=0,
+    .output_max = 6000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=1};	
+	
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
 //任务实现区
@@ -105,8 +109,10 @@ void can1_rx(void const * argument){
         );
 
         motor_output[3]= //bopandianji
-        pid_speed_task(
+        pid_speed_angle_task(
             motor_info_global[3].motor_speed,
+            motor_info_global[3].motor_angle,
+            &pid_angle_bopamdianji,
             &pid_speed_bopandianji,
             3
         );
@@ -195,17 +201,16 @@ void debug_send_uart1(uint8_t t){
                 vofa_send(6,(float)pid_speed_bopandianji.target,(float)pid_speed_bopandianji.now,
                 (float)(pid_speed_bopandianji.now - pid_speed_bopandianji.target),(float)pid_speed_bopandianji.output,
                 (float)motor_info_global[3].motor_speed);
+                break;
+            }
+            case 7:{
+                vofa_send(6,(float)pid_angle_bopamdianji.target,(float)pid_angle_bopamdianji.now,
+                (float)(pid_angle_bopamdianji.now - pid_angle_bopamdianji.target),(float)pid_angle_bopamdianji.output,
+                (float)motor_info_global[3].motor_angle);
+                #if bopan_debug
+                #else
                 switch (remote_s2)
                 {
-                    case 1:
-                        pid_speed_bopandianji.target=6000;
-                        break;
-                    case 3:
-                        pid_speed_bopandianji.target=0;
-                        break;
-                    default:
-                        break;
-                    /*
                     case 1:
                         bopan_single_shoot_flag=1;
                         break;
@@ -218,8 +223,8 @@ void debug_send_uart1(uint8_t t){
                         break;
                     default:
                         break;
-                        */
                 }
+                #endif
                 break;
             }
             default:
@@ -242,7 +247,7 @@ void debug_send_uart1(uint8_t t){
 void bopan_motor_set(void const * argument)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(50); // 20Hz 任务周期
+    const TickType_t xFrequency = pdMS_TO_TICKS(25); // 20Hz 任务周期
 
     // --- 状态变量 ---
     // 用于单发模式的 "边沿检测"
@@ -255,9 +260,14 @@ void bopan_motor_set(void const * argument)
         // 1. 使用vTaskDelayUntil实现精准的20Hz周期
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
+        ///debug时,先跳过单发连发逻辑
+        #if bopan_debug
+            continue;
+        #endif
+        ///
         // 2. 最高优先级：检查机器人是否使能。如果未使能，则强制目标为0并复位所有状态。
         if (g_robot_control_state != CONTROL_ENABLED) {
-            pid_speed_bopandianji.target = 0;
+            //pid_angle_bopamdianji.target = pid_angle_bopamdianji.now; // 保持当前位置
             // 复位状态机，以便下次使能时能有正确的初始状态
             last_single_shoot_flag = 0;
             continuous_phase = 0;
@@ -270,9 +280,9 @@ void bopan_motor_set(void const * argument)
         {
             // 根据当前所处的阶段设置目标值
             if (continuous_phase == 0) {
-                pid_speed_bopandianji.target = 100;
+                pid_angle_bopamdianji.target += bopan_delta_angle;
             } else {
-                pid_speed_bopandianji.target = 0;
+                //pid_angle_bopamdianji.target = pid_angle_bopamdianji.now; // 保持当前位置
             }
             // 翻转状态，为下一次循环做准备
             continuous_phase = !continuous_phase;
@@ -284,7 +294,7 @@ void bopan_motor_set(void const * argument)
         else if (bopan_single_shoot_flag == 1 && last_single_shoot_flag == 0)
         {
             // 这是“上升沿”，是单发指令触发的唯一时刻
-            pid_speed_bopandianji.target = 100;
+            pid_angle_bopamdianji.target += bopan_delta_angle;
 
             // 连发模式未激活，将其状态机复位
             continuous_phase = 0;
@@ -292,7 +302,7 @@ void bopan_motor_set(void const * argument)
         // 5. 如果以上模式均不满足，则为停止状态
         else 
         {
-            pid_speed_bopandianji.target = 0;
+            //pid_angle_bopamdianji.target = pid_angle_bopamdianji.now; // 保持当前位置
             
             // 连发模式未激活，将其状态机复位
             continuous_phase = 0;

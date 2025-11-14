@@ -67,19 +67,27 @@ float pid_speed_angle_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos 
         // 执行串级PID计算
         #if  pid_speed_mode
 		#else
-            if(motor_id==4)
+        switch(motor_id){
+            case 4:
                 pid_speed->target=pid_cal_pos_angle(pid_angle);// 角度环的输出是速度环的目标
-            else if(motor_id==0)
+                break;
+            case 0:
                 pid_speed->target=-pid_cal_pos_angle_pitch(pid_angle);
-			else{
-				 motor_id=motor_id;
-			}
+                break;
+            case 3:
+                pid_speed->target=pid_cal_pos_angle(pid_angle);
+                break;
+            default:
+                break;
+        }
 		#endif
         switch(motor_id){
             case 4:
                 return pid_cal_pos_speed(pid_speed);
             case 0:
                 return (pid_cal_pos_speed(pid_speed)+g_compensation);
+            case 3:
+                return pid_cal_pos_speed(pid_speed);
             default:
                 return 0;
         }

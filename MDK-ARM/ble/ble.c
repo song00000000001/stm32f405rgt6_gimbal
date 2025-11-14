@@ -97,22 +97,35 @@ void ble_parse(uint8_t *buf)
 {
     pid_pos *pid;
 	pid=&pid_speed_yaw;
-	if(ble_control_id_global==0)
+    switch (ble_control_id_global)
+    {
+    case  0:
         pid=&pid_speed_yaw;
-	else if(ble_control_id_global==1)
-        pid=&pid_angle_yaw;    
-    else if(ble_control_id_global==2)
+        break;
+    case  1:
+        pid=&pid_angle_yaw;
+        break;
+    case  2:
         pid=&pid_speed_pitch;
-    else if(ble_control_id_global==3)
-        pid=&pid_angle_pitch;  
-    else if(ble_control_id_global==4)
-        pid=&pid_speed_left_whell;  
-    else if(ble_control_id_global==5)
+        break;
+    case  3:
+        pid=&pid_angle_pitch;
+        break;
+    case  4:
+        pid=&pid_speed_left_whell;
+        break;
+    case  5:
         pid=&pid_speed_right_whell;
-    else if(ble_control_id_global==6)
+        break;
+    case  6:
         pid=&pid_speed_bopandianji;
-    else   
-        return; 
+        break;
+    case  7:
+        pid=&pid_angle_bopamdianji;
+        break;
+    default:
+        return;
+    }
 	
 	if(buf==NULL||buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
