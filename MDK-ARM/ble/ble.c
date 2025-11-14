@@ -1,36 +1,74 @@
 #include "ble.h"
-#include "string.h"
-#include "breathing_led.h"
-#include "pid.h"
+
 #include "stdio.h"
+#include "task_self.h"
+#include "stm32f4xx_hal.h"
 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "cmsis_os.h"
 
-float led_freq=1;
-bool sbus_receive_success=false;
-bool sbus_rx_flag=false;
-bool sbus_read_flag=false;
-uint8_t  ble_rx_buffer[ble_rx_buffer_size];
+uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
-uint8_t sbus_rx_buf_t[SBUS_FRAME_SIZE];
+uint8_t ble_tx_buffer[BLE_TX_BUF_LEN];
 
-extern osMessageQId led_control_queueHandle;
-
-void ble_parse(uint8_t *buf);
-bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data);
-	  
-void ble_print(uint8_t* buf,uint16_t len)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	//HAL_UART_Transmit_DMA(ble_uart,(uint8_t *) buf, len);
-	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 10);
+   if ( huart->Instance== USART1)
+   {
+		//解析串口调试命令,控制pid参数和目标值,呼吸灯频率
+		ble_parse(ble_rx_buffer);
+		if(led_freq<=0.005 || led_freq>led_timer){
+			led_freq=1; // 这个赋值是原子的，所以不需要互斥锁
+		}
+        // 重启DMA接收
+		#if ble_send_rx_buf_debug
+			ble_print(ble_rx_buffer,ble_rx_buffer_size);
+		#endif
+		HAL_UART_Receive_DMA(ble_uart, ble_rx_buffer, ble_rx_buffer_size);
+   }
+
+   if ( huart->Instance== USART2)
+   {
+		sbus_rx_flag=true; 
+        // 重启DMA接收
+		#if sbus_send_rx_buf_debug
+			ble_print(sbus_rx_buf,SBUS_FRAME_SIZE);
+			//my_printf("r:%s\n",sbus_rx_buf);
+		#endif
+		HAL_UART_Receive_DMA(sbus_uart, sbus_rx_buf, SBUS_FRAME_SIZE);
+   }
 }
 
 
+// 任务/普通上下文调用：尝试使用 DMA，多次尝试/回退到阻塞发送以保证可靠性
+void ble_print(uint8_t* buf,uint16_t len)
+{
+	if (len == 0 || buf == NULL) return;
+	if (len > BLE_TX_BUF_LEN) len = BLE_TX_BUF_LEN;
+
+	// 首次尝试使用 DMA
+	if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
+		return;
+	} 
+	/*
+	// 如果 DMA 忙，尝试中止当前传输并重试（任务上下文允许调用阻塞操作）
+	if (HAL_UART_AbortTransmit(ble_uart) == HAL_OK) {
+		// 给硬件一点时间完成中止（很短），然后重试
+		//HAL_Delay(1);
+		for(uint8_t i=0;i<10;i++) {
+			i++;
+			i--;
+		}
+		if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
+			return;
+		}
+	}
+	*/
+	// 最后兜底：阻塞发送，确保调试信息不会完全丢失	
+	//HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
+}
 void ble_Init(void)
 {
-	my_printf("uart1_start\n");
+	//my_printf("uart1_start\n");
+	ble_print((uint8_t*)"start",5);
 	#if ble_uart_send_debug
 		my_printf("start_uart1\n");
 	#endif
@@ -42,7 +80,7 @@ void ble_Init(void)
 		#endif
 		Error_Handler();
   	}
- 	if ( HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE)!= HAL_OK){
+ 	if ( HAL_UART_Receive_DMA(sbus_uart, sbus_rx_buf, SBUS_FRAME_SIZE)!= HAL_OK){
 		// 错误处理
 		#if ble_uart_send_debug
 			my_printf("uart2_error\n");
@@ -51,142 +89,45 @@ void ble_Init(void)
 	}
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-   if ( huart->Instance== USART1)
-   {
-		ble_parse(ble_rx_buffer);
-		if(led_freq<=0.005 || led_freq>led_timer){
-			led_freq=1; // 这个赋值是原子的，所以不需要互斥锁
-		}
-        // 重启DMA接收
-		#if ble_send_rx_buf_debug
-			ble_print(ble_rx_buffer,ble_rx_buffer_size);
-		#endif
-		HAL_UART_Receive_DMA(&huart1, ble_rx_buffer, ble_rx_buffer_size);
-   }
-
-   if ( huart->Instance== USART2)
-   {
-
-		if(!sbus_read_flag) memcpy( sbus_rx_buf_t,  sbus_rx_buf,SBUS_FRAME_SIZE);
-		sbus_rx_flag=true; 
-        // 重启DMA接收
-		#if sbus_send_rx_buf_debug
-			ble_print(sbus_rx_buf,SBUS_FRAME_SIZE);
-		#endif
-
-		HAL_UART_Receive_DMA(huart_sbus, sbus_rx_buf, SBUS_FRAME_SIZE);
-   }
-}
-
-  /*
-ch1: 984, ch2: 995, ch3: 172, ch4: 998, ch5:1809, ch6: 992, ch7: 172, ch8: 992,rssi:1904,frame_lost:0,failsafe:0
-右roll,右pitch,左油,左yaw,e,b,c,f,ch16
-*/
-extern DMA_HandleTypeDef hdma_usart1_tx;
-void sbus_receive(void const * argument)
-{
-  /* USER CODE BEGIN sbus_receive */
-	uint8_t local_rx_buffer[ble_rx_buffer_size];
-	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(10); //每100hz检查遥控信号
-	SbusData_t my_sbus_data;
-	uint8_t ble_tx_counter=0;
-  /* Infinite loop */
-  for(;;)
-  {
-	// 1. 使用vTaskDelayUntil实现精准的周期性延时
-    vTaskDelayUntil(&xLastWakeTime, xFrequency);
-	 
-	 //HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-	sbus_receive_success=false;
-	
-	if(sbus_rx_flag){//如果中断收到信息
-		sbus_read_flag=true;//打开锁,防止数据覆盖。此时有一帧完整的旧数据可读取。
-		sbus_rx_flag=sbus_parse(sbus_rx_buf_t, &my_sbus_data);//解析成功后才执行命令
-		sbus_read_flag=false;	//解开锁，中断会向2号缓冲区搬数据
-  	}	
-
-	if(sbus_rx_flag){//如果成功解析
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		sbus_receive_success=((!my_sbus_data.failsafe)  && (my_sbus_data.channels[4]>1500));//并且没有丢失联系,并且遥感在上,就激活(原子操作
-		#if sbus_send_chan
-			if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-				my_printf("c3:%4dc5:%4drs:%4dlost:%dfail:%dcan:%d\n\0",
-					my_sbus_data.channels[2], my_sbus_data.channels[4],
-					my_sbus_data.channels[15],
-					my_sbus_data.frame_lost,my_sbus_data.failsafe,sbus_receive_success);  
-			} 
-		#endif
-		sbus_rx_flag=false;
-		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-	}
-
-  }
-  /* USER CODE END sbus_receive */
-}
-
-/*
-if(HAL_DMA_GetState(&hdma_usart1_tx)==HAL_DMA_STATE_READY){
-my_printf("c1:%4dc2:%4dc3:%4dc4:%4d"
-	"c5:%4dc6:%4dc7:%4dc8:%4drs:%4d"
-	"lost:%d,fail:%d\r\n",
-	my_sbus_data.channels[0], my_sbus_data.channels[1],
-	my_sbus_data.channels[2], my_sbus_data.channels[3],
-	my_sbus_data.channels[4], my_sbus_data.channels[5],
-	my_sbus_data.channels[6], my_sbus_data.channels[7],
-	my_sbus_data.channels[15],
-	my_sbus_data.frame_lost,my_sbus_data.failsafe); 
-} 
-*/
-
-bool sbus_parse(const uint8_t* frame, SbusData_t* sbus_data)
-{
-    // 1. 帧头帧尾校验
-    if (frame[0] != 0x0F || frame[24] != 0x00) {
-        return false;
-    }
-
-    // 2. 解码16个通道的数据 (核心部分)
-    // 使用位操作精确地提取每个11位通道
-    sbus_data->channels[0]  = ((frame[1]    | frame[2] << 8) & 0x07FF);
-    sbus_data->channels[1]  = ((frame[2] >> 3 | frame[3] << 5) & 0x07FF);
-    sbus_data->channels[2]  = ((frame[3] >> 6 | frame[4] << 2 | frame[5] << 10) & 0x07FF);
-    sbus_data->channels[3]  = ((frame[5] >> 1 | frame[6] << 7) & 0x07FF);
-    sbus_data->channels[4]  = ((frame[6] >> 4 | frame[7] << 4) & 0x07FF);
-    sbus_data->channels[5]  = ((frame[7] >> 7 | frame[8] << 1 | frame[9] << 9) & 0x07FF);
-    sbus_data->channels[6]  = ((frame[9] >> 2 | frame[10] << 6) & 0x07FF);
-    sbus_data->channels[7]  = ((frame[10] >> 5 | frame[11] << 3) & 0x07FF);
-    sbus_data->channels[8]  = ((frame[12]   | frame[13] << 8) & 0x07FF);
-    sbus_data->channels[9]  = ((frame[13] >> 3 | frame[14] << 5) & 0x07FF);
-    sbus_data->channels[10] = ((frame[14] >> 6 | frame[15] << 2 | frame[16] << 10) & 0x07FF);
-    sbus_data->channels[11] = ((frame[16] >> 1 | frame[17] << 7) & 0x07FF);
-    sbus_data->channels[12] = ((frame[17] >> 4 | frame[18] << 4) & 0x07FF);
-    sbus_data->channels[13] = ((frame[18] >> 7 | frame[19] << 1 | frame[20] << 9) & 0x07FF);
-    sbus_data->channels[14] = ((frame[20] >> 2 | frame[21] << 6) & 0x07FF);
-    sbus_data->channels[15] = ((frame[21] >> 5 | frame[22] << 3) & 0x07FF);
-    
-    // 3. 解析标志位
-    sbus_data->ch17 = frame[23] & 0x01;
-    sbus_data->ch18 = frame[23] & 0x02;
-    sbus_data->frame_lost = frame[23] & 0x04;
-    sbus_data->failsafe = frame[23] & 0x08;
-
-    return true;
-}
 
 //约定发送字符串格式如下
 //"St+1000.0000E"
 //"0123456789012"
 void ble_parse(uint8_t *buf)
 {
-	#if pid_speed_mode
-	pid_inc *pid=&pid_speed;
-	#else
-	 pid_pos *pid=&pid_angle;
-	#endif
-	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
+    pid_pos *pid;
+	pid=&pid_speed_yaw;
+    switch (ble_control_id_global)
+    {
+    case  0:
+        pid=&pid_speed_yaw;
+        break;
+    case  1:
+        pid=&pid_angle_yaw;
+        break;
+    case  2:
+        pid=&pid_speed_pitch;
+        break;
+    case  3:
+        pid=&pid_angle_pitch;
+        break;
+    case  4:
+        pid=&pid_speed_left_whell;
+        break;
+    case  5:
+        pid=&pid_speed_right_whell;
+        break;
+    case  6:
+        pid=&pid_speed_bopandianji;
+        break;
+    case  7:
+        pid=&pid_angle_bopamdianji;
+        break;
+    default:
+        return;
+    }
+	
+	if(buf==NULL||buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
 		//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
 		return;
@@ -207,12 +148,12 @@ void ble_parse(uint8_t *buf)
 		else if(buf[2] == '-')
 				val = -val;
 		else
-				return;
+			return;
 
 		if(val<-1000) 
-				val=-1000;
+            val=-1000;
 		if(val>=1000) 
-				val=1000;
+            val=1000;
 		
 		switch(buf[1])
 		{
@@ -231,6 +172,9 @@ void ble_parse(uint8_t *buf)
 			case 'L':
 				led_freq=val;
 				break;
+            case 'g':
+                ble_control_id= (uint8_t)val;
+                break;  
 			default:
 					break;
 		}
@@ -242,36 +186,40 @@ void ble_parse(uint8_t *buf)
 void vofa_send(int num, ...) {
     va_list args;
     va_start(args, num);
-    uint8_t  ble_txBuffer[BLE_TX_BUF_LEN];
     // 拷贝所有float参数到缓冲区
     for (int i = 0; i < num; i++) {
         float value = va_arg(args, double); // float在可变参数中会自动提升为double
-        memcpy(&ble_txBuffer[i * 4], &value, 4);
+        memcpy(&ble_tx_buffer[i * 4], &value, 4);
     }
     
     va_end(args);
     
     // 添加帧尾 0x00, 0x00, 0x80, 0x7F
     uint8_t tail = num * 4;
-    ble_txBuffer[tail] = 0x00;
-    ble_txBuffer[tail + 1] = 0x00;
-    ble_txBuffer[tail + 2] = 0x80;
-    ble_txBuffer[tail + 3] = 0x7F;
+    ble_tx_buffer[tail] = 0x00;
+    ble_tx_buffer[tail + 1] = 0x00;
+    ble_tx_buffer[tail + 2] = 0x80;
+    ble_tx_buffer[tail + 3] = 0x7F;
 
-    ble_print((uint8_t*)ble_txBuffer, tail + 4);
+    ble_print((uint8_t*)ble_tx_buffer, tail + 4);
 }
 
 void my_printf(const char *format, ...)
 {
-    char buf[BLE_TX_BUF_LEN];
     va_list args;
     va_start(args, format);
 
-    int len = vsnprintf(buf, BLE_TX_BUF_LEN, format, args);
+    int len = vsnprintf((char*)ble_tx_buffer, BLE_TX_BUF_LEN, format, args);
     if (len > 0 && len < BLE_TX_BUF_LEN)
     {
-      ble_print((uint8_t *)buf,len);
+      ble_print((uint8_t *)ble_tx_buffer,len);
     }
 
     va_end(args);
 }
+
+
+
+
+
+

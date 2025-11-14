@@ -1,52 +1,5 @@
 #include "stm32f4xx_hal.h"
 #include "mpu6050.h"
- 
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "cmsis_os.h"
-#include "task.h"
-#include "FreeRTOSConfig.h"
-#include "ble.h"
-#include "inv_mpu.h"
-float pitch,roll,yaw;
-	   
-void mpu6050_read(void const * argument)
-{
-	/* USER CODE BEGIN mpu6050_read */
-	/* Infinite loop */
-	//uint8_t mpu_buf[6],res;
-    
-    short ax,ay,az,gx,gy,gz;
-	//mpu6050_raw mpu6050_raw_data;
-	TickType_t xLastWakeTime = xTaskGetTickCount(); // 获取当前时间
-    const TickType_t xFrequency = pdMS_TO_TICKS(5); 
-        
-	for(;;)
-	{
-		// 1. 使用vTaskDelayUntil实现精准的周期性延时
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
-		HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
-		#if 0
-            MPU_Get_Accelerometer(&ax,&ay,&az);
-            MPU_Get_Gyroscope(&gx,&gy,&gz);
-            vofa_send(2,(float)ax,(float)gx);
-        #endif    
-        mpu_dmp_get_data(&pitch,&roll,&yaw);
-		#if mpu_send_angle
-            vofa_send(3,(float)pitch,(float)roll,(float)yaw);
-        #endif
-        HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_0);
-		//HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_8);
-		//HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
-		// HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_1);
-	}
-  /* USER CODE END mpu6050_read */
-}
-
 
 //初始化MPU6050
 //返回值:0,成功
