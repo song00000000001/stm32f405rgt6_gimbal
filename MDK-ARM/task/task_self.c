@@ -17,6 +17,9 @@ bool sbus_rx_flag=false;
 uint8_t can_rx_flag=0;
 bool mpu_rx_flag=false;
 volatile ControlState_t g_robot_control_state = CONTROL_DISABLED;
+volatile uint8_t remote_s2 = 0;
+volatile uint8_t bopan_single_shoot_flag = 0;
+volatile uint8_t bopan_continuous_shoot_flag = 0;
 uint8_t  vofa_send_id= 2;
  
 //全局数据区
@@ -29,13 +32,13 @@ ComplementaryFilter myComplementaryFilter[MOTOR_MAX_NUM];
 
 //--- left_whell and right whell and bopandianji 	
 pid_pos pid_speed_left_whell =   {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
-    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+    .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 pid_pos pid_speed_right_whell =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
-    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+    .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 pid_pos pid_speed_bopandianji =  {.Kp = 0, .Ki = 0, .Kd = 0,.integral_max=0, .k_f=0,
-    .output_max = 0,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
+    .output_max = 16384,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=0};
 
 static int16_t motor_output[5] = {0}; // 用于存储PID计算结果
 
@@ -67,9 +70,10 @@ void can1_rx(void const * argument){
             mpu_rx_flag=false;
         }
 
-        // 调用PID任务，不再需要传递rx_flag
-        motor_output[4] = 
-        pid_speed_task(
+       //计算各电机输出
+
+        motor_output[4] = //yaw motor
+        pid_speed_angle_task(
             local_gz,
             motor_info_global[4].motor_angle,
             &pid_angle_yaw,
@@ -77,8 +81,8 @@ void can1_rx(void const * argument){
             4
         );
 
-        motor_output[0]=
-        pid_speed_task(
+        motor_output[0]= //pitch motor
+        pid_speed_angle_task(
             local_gy,
             motor_info_global[0].motor_angle,
             &pid_angle_pitch,
@@ -86,33 +90,27 @@ void can1_rx(void const * argument){
             0
         );
 
-        motor_output[1]=
+        motor_output[1]= //left whell
         pid_speed_task(
             motor_info_global[1].motor_speed,
-            0,
-            NULL,
             &pid_speed_left_whell,
             1
         );
-		 /*
-        motor_output[2]=
+		 
+        motor_output[2]= //right whell
         pid_speed_task(
             motor_info_global[2].motor_speed,
-            0,
-            NULL,
             &pid_speed_right_whell,
             2
         );
 
-        motor_output[3]=
+        motor_output[3]= //bopandianji
         pid_speed_task(
             motor_info_global[3].motor_speed,
-            0,
-            NULL,
             &pid_speed_bopandianji,
             3
         );
-		 */
+		 
         // 输出电压到电机
         if(g_robot_control_state == CONTROL_ENABLED) {
             set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);//pitch motor
@@ -129,6 +127,7 @@ void can1_rx(void const * argument){
 }
 
 void debug_send_uart1(uint8_t t){
+
 	switch (t)
     {
     case 1:
@@ -158,21 +157,71 @@ void debug_send_uart1(uint8_t t){
                 (float)(pid_angle_pitch.now - pid_angle_pitch.target),(float)pid_angle_pitch.output,
                 (float)mpu_data_global.gy);
                 break;
-            case 4:
+            case 4:{
                 vofa_send(6,(float)pid_speed_left_whell.target,(float)pid_speed_left_whell.now,
                 (float)(pid_speed_left_whell.now - pid_speed_left_whell.target),(float)pid_speed_left_whell.output,
                 (float)motor_info_global[1].motor_speed);
+                switch (remote_s2)
+                {
+                    case 1:
+                        pid_speed_left_whell.target=6000;
+                        break;
+                    case 3:
+                        pid_speed_left_whell.target=0;
+                        break;
+                    default:
+                        break;
+                }
                 break;
-            case 5:
+            }
+            case 5:{
                 vofa_send(6,(float)pid_speed_right_whell.target,(float)pid_speed_right_whell.now,
                 (float)(pid_speed_right_whell.now - pid_speed_right_whell.target),(float)pid_speed_right_whell.output,
                 (float)motor_info_global[2].motor_speed);
+                switch (remote_s2)
+                {
+                    case 1:
+                        pid_speed_right_whell.target=6000;
+                        break;
+                    case 3:
+                        pid_speed_right_whell.target=0;
+                        break;
+                    default:
+                        break;
+                }
                 break;
-            case 6:
+            }
+            case 6:{
                 vofa_send(6,(float)pid_speed_bopandianji.target,(float)pid_speed_bopandianji.now,
                 (float)(pid_speed_bopandianji.now - pid_speed_bopandianji.target),(float)pid_speed_bopandianji.output,
                 (float)motor_info_global[3].motor_speed);
+                switch (remote_s2)
+                {
+                    case 1:
+                        pid_speed_bopandianji.target=6000;
+                        break;
+                    case 3:
+                        pid_speed_bopandianji.target=0;
+                        break;
+                    default:
+                        break;
+                    /*
+                    case 1:
+                        bopan_single_shoot_flag=1;
+                        break;
+                    case 3:
+                        bopan_continuous_shoot_flag=0;
+                        bopan_single_shoot_flag=0;
+                        break;
+                    case 2:
+                        bopan_continuous_shoot_flag=1;
+                        break;
+                    default:
+                        break;
+                        */
+                }
                 break;
+            }
             default:
                 break;
             }
@@ -190,8 +239,69 @@ void debug_send_uart1(uint8_t t){
     }
 }
 
+void bopan_motor_set(void const * argument)
+{
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(50); // 20Hz 任务周期
 
+    // --- 状态变量 ---
+    // 用于单发模式的 "边沿检测"
+    static uint8_t last_single_shoot_flag = 0; 
+    // 用于连发模式的 "状态翻转" (0代表设置100, 1代表设置0)
+    static uint8_t continuous_phase = 0; 
 
+    for(;;)
+    {
+        // 1. 使用vTaskDelayUntil实现精准的20Hz周期
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        // 2. 最高优先级：检查机器人是否使能。如果未使能，则强制目标为0并复位所有状态。
+        if (g_robot_control_state != CONTROL_ENABLED) {
+            pid_speed_bopandianji.target = 0;
+            // 复位状态机，以便下次使能时能有正确的初始状态
+            last_single_shoot_flag = 0;
+            continuous_phase = 0;
+            continue; // 直接进入下一次循环等待
+        }
+
+        // 控制逻辑 (优先级: 连发 > 单发 > 停止) ---
+        // 3. 检查是否处于连发模式
+        if (bopan_continuous_shoot_flag == 1) 
+        {
+            // 根据当前所处的阶段设置目标值
+            if (continuous_phase == 0) {
+                pid_speed_bopandianji.target = 100;
+            } else {
+                pid_speed_bopandianji.target = 0;
+            }
+            // 翻转状态，为下一次循环做准备
+            continuous_phase = !continuous_phase;
+            
+            // 因为连发模式激活，所以重置单发检测的状态，防止模式切换时出现意外
+            last_single_shoot_flag = 0;
+        }
+        // 4. 如果不处于连发模式，则检查单发模式
+        else if (bopan_single_shoot_flag == 1 && last_single_shoot_flag == 0)
+        {
+            // 这是“上升沿”，是单发指令触发的唯一时刻
+            pid_speed_bopandianji.target = 100;
+
+            // 连发模式未激活，将其状态机复位
+            continuous_phase = 0;
+        }
+        // 5. 如果以上模式均不满足，则为停止状态
+        else 
+        {
+            pid_speed_bopandianji.target = 0;
+            
+            // 连发模式未激活，将其状态机复位
+            continuous_phase = 0;
+        }
+
+        // 6. 在循环的最后，更新 "上一时刻" 的单发标志位状态，为下一次的边沿检测做准备
+        last_single_shoot_flag = bopan_single_shoot_flag;
+    }
+}
 
 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -230,7 +340,7 @@ void sbus_receive(void const * argument)
                 g_robot_control_state = CONTROL_DISABLED;
                 LED_GREEN_OFF(); 
             }
-
+            remote_s2 = RC_CtrlData.remote.s2;
             sbus_rx_flag=false;
             fail_count=0;
         }

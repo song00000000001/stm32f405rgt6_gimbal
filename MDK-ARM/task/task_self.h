@@ -45,7 +45,7 @@ extern volatile uint16_t g_led_brightness;
 extern volatile ControlState_t g_robot_control_state;
 extern volatile uint8_t ble_control_id;
 extern volatile uint8_t ble_control_id_global;
-
+extern volatile uint8_t remote_s2;
 //函数声明区
 void debug_send_uart1(uint8_t t);
 

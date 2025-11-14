@@ -45,6 +45,7 @@ extern pid_pos pid_speed_yaw;
 float pid_cal_pos_speed(pid_pos *pid);
 float pid_cal_pos_angle(pid_pos *pid);
 float pid_cal_inc(pid_inc *pid);
-float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id);
+float pid_speed_angle_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id);
 float pid_cal_pos_angle_pitch(pid_pos *pid);
+float pid_speed_task(float speed,pid_pos *pid_speed,uint8_t motor_id);
 #endif

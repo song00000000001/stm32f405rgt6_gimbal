@@ -20,49 +20,46 @@ pid_pos pid_angle_yaw =   {.Kp = 14.5, .Ki = 0.1, .Kd = 40,.integral_max=600,
 pid_pos pid_speed_yaw =   {.Kp = 600, .Ki = 0, .Kd = 0,.integral_max=25000, .k_f=30,
 	.output_max = 25000,.target=0,.now=0,.last_now=0,.integral=0,.output=0,.last_error=0,.integral_threshold=20};
 
-float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id)
+float pid_speed_angle_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id)
 {
     // --- 0. 静态变量定义 ---
     // --- 1. 编码器绝对位置累加
     static int32_t absolute_position[5] = {0};   
     static int32_t last_encoder_raw[5]={0};
-	if(pid_speed==NULL)
+	if(pid_speed==NULL || pid_angle==NULL)
         return 0;
-    if(pid_angle!=NULL){
-        // 更新绝对位置,基于电机的角度反馈
-        int16_t current_encoder_raw = angle;
-        int16_t encoder_delta = current_encoder_raw - last_encoder_raw[motor_id];
-        if (encoder_delta > 8192/2) encoder_delta -= 8192;
-        else if (encoder_delta < -8192/2) encoder_delta += 8192;
-        absolute_position[motor_id] += encoder_delta;
-        last_encoder_raw[motor_id] = current_encoder_raw;
+    // 更新绝对位置,基于电机的角度反馈
+    int16_t current_encoder_raw = angle;
+    int16_t encoder_delta = current_encoder_raw - last_encoder_raw[motor_id];
+    if (encoder_delta > 8192/2) encoder_delta -= 8192;
+    else if (encoder_delta < -8192/2) encoder_delta += 8192;
+    absolute_position[motor_id] += encoder_delta;
+    last_encoder_raw[motor_id] = current_encoder_raw;
 
-        // --- 2. 根据全局控制状态来执行PID逻辑 ---
-        // 在失能状态下，重置PID状态
-        if (g_robot_control_state == CONTROL_DISABLED)
-        {
-            // 将当前电机的绝对位置，设定为新的目标位置
-            pid_angle->target =pid_angle->now;
-            
-            // 清零所有PID积分和历史误差，防止旧数据影响
-            pid_angle->integral = 0;
-            pid_angle->last_error = 0;
-            pid_angle->last_now=0;
-            pid_speed->integral = 0;
-            pid_speed->last_error = 0;
-            pid_speed->last_now=0;
-        }
-
-        // --- 3. 计算当前位置和速度 ---
-        pid_angle->now = (float)absolute_position[motor_id] * 360.0f / 8192.0f+140.0f;
+    // --- 2. 根据全局控制状态来执行PID逻辑 ---
+    // 在失能状态下，重置PID状态
+    if (g_robot_control_state == CONTROL_DISABLED)
+    {
+        // 将当前电机的绝对位置，设定为新的目标位置
+        pid_angle->target =pid_angle->now;
+        
+        // 清零所有PID积分和历史误差，防止旧数据影响
+        pid_angle->integral = 0;
+        pid_angle->last_error = 0;
+        pid_angle->last_now=0;
+        pid_speed->integral = 0;
+        pid_speed->last_error = 0;
+        pid_speed->last_now=0;
     }
+
+    // --- 3. 计算当前位置和速度 ---
+    pid_angle->now = (float)absolute_position[motor_id] * 360.0f / 8192.0f+140.0f;
 	
 	#if filter_enable
 		pid_speed->now =	filterValue(&myFilter,speed);
 	#else	
 		pid_speed->now = speed;
     #endif
-
 
 	// --- 4. 只有在使能状态下才计算并返回PID输出 ---
     if (g_robot_control_state == CONTROL_ENABLED)
@@ -83,6 +80,32 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
                 return pid_cal_pos_speed(pid_speed);
             case 0:
                 return (pid_cal_pos_speed(pid_speed)+g_compensation);
+            default:
+                return 0;
+        }
+    }
+    else
+    {
+        // 如果是失能状态，返回0，不给电机任何力
+        return 0;
+    }
+}
+
+float pid_speed_task(float speed,pid_pos *pid_speed,uint8_t motor_id)
+{
+	if(pid_speed==NULL)
+        return 0;
+    // --- 3. 计算当前速度 ---
+	#if filter_enable
+		pid_speed->now =	filterValue(&myFilter,speed);
+	#else	
+		pid_speed->now = speed;
+    #endif
+
+	// --- 4. 只有在使能状态下才计算并返回PID输出 ---
+    if (g_robot_control_state == CONTROL_ENABLED)
+    {
+        switch(motor_id){
             case 1:
                 return pid_cal_pos_speed(pid_speed);
             case 2:
@@ -95,7 +118,10 @@ float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_s
     }
     else
     {
-        // 如果是失能状态，返回0，不给电机任何力
+        pid_speed->target =0;
+        pid_speed->integral = 0;
+        pid_speed->last_error = 0;
+        pid_speed->last_now=0;
         return 0;
     }
 }
