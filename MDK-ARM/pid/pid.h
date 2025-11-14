@@ -18,6 +18,8 @@ typedef struct pid_pos
 	float last_error;
 	float output;
 	float output_max;
+	
+	float k_f;
 }pid_pos;
 
 typedef struct pid_inc
@@ -35,12 +37,15 @@ typedef struct pid_inc
 
 //#define PID_TIM &htim1
 
-extern pid_pos pid_angle;
-extern pid_inc pid_speed;
+extern pid_pos pid_angle_pitch;
+extern pid_pos pid_speed_pitch;
+extern pid_pos pid_angle_yaw;
+extern pid_pos pid_speed_yaw;
 
-void pid_init();
-float pid_cal_pos(pid_pos *pid);
+float pid_cal_pos_speed(pid_pos *pid);
+float pid_cal_pos_angle(pid_pos *pid);
 float pid_cal_inc(pid_inc *pid);
-float pid_speed_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id);
-
+float pid_speed_angle_task(float speed,int16_t angle,pid_pos *pid_angle,pid_pos *pid_speed,uint8_t motor_id);
+float pid_cal_pos_angle_pitch(pid_pos *pid);
+float pid_speed_task(float speed,pid_pos *pid_speed,uint8_t motor_id);
 #endif

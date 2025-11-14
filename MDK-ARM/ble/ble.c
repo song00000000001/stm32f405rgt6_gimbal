@@ -4,6 +4,7 @@
 #include "task_self.h"
 #include "stm32f4xx_hal.h"
 
+
 uint8_t ble_rx_buffer[ble_rx_buffer_size];
 uint8_t sbus_rx_buf[SBUS_FRAME_SIZE];
 uint8_t ble_tx_buffer[BLE_TX_BUF_LEN];
@@ -94,13 +95,39 @@ void ble_Init(void)
 //"0123456789012"
 void ble_parse(uint8_t *buf)
 {
-	pid_pos *pid;
-	if (pid_speed_mode)
-		pid=&pid_speed_yaw;
-	else
-	    pid=&pid_angle_yaw;
-
-	if(buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
+    pid_pos *pid;
+	pid=&pid_speed_yaw;
+    switch (ble_control_id_global)
+    {
+    case  0:
+        pid=&pid_speed_yaw;
+        break;
+    case  1:
+        pid=&pid_angle_yaw;
+        break;
+    case  2:
+        pid=&pid_speed_pitch;
+        break;
+    case  3:
+        pid=&pid_angle_pitch;
+        break;
+    case  4:
+        pid=&pid_speed_left_whell;
+        break;
+    case  5:
+        pid=&pid_speed_right_whell;
+        break;
+    case  6:
+        pid=&pid_speed_bopandianji;
+        break;
+    case  7:
+        pid=&pid_angle_bopamdianji;
+        break;
+    default:
+        return;
+    }
+	
+	if(buf==NULL||buf[0] != 'S'  || buf[7] != '.' || buf[12] != 'E' ) 
    	{
 		//memset(ble_rx_buffer, 0, ble_rx_buffer_size);
 		return;
@@ -121,12 +148,12 @@ void ble_parse(uint8_t *buf)
 		else if(buf[2] == '-')
 				val = -val;
 		else
-				return;
+			return;
 
 		if(val<-1000) 
-				val=-1000;
+            val=-1000;
 		if(val>=1000) 
-				val=1000;
+            val=1000;
 		
 		switch(buf[1])
 		{
@@ -145,6 +172,9 @@ void ble_parse(uint8_t *buf)
 			case 'L':
 				led_freq=val;
 				break;
+            case 'g':
+                ble_control_id= (uint8_t)val;
+                break;  
 			default:
 					break;
 		}

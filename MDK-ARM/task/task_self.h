@@ -9,7 +9,10 @@
 //宏定义区
 
     //切换输出用
-#define motor_id_global 4       	 //电机id选择,目前对pid计算和信息输出有效,因为还没有设计多电机控制
+#define bopan_debug 0        //调试拨盘电机时，跳过单发连发逻辑
+
+    //任务周期定义
+
 #define can_send_rx 1      				//电机读取信息输出
 
 #define pid_speed_mode 0    		//1为速度环，0为位置环
@@ -22,6 +25,7 @@
 
 
     //debug用
+#define ble_send_id  2        //发送调试信息选择
 #define ble_uart_send_debug 1       //初始化发送一些信息
 #define ble_send_rx_buf_debug 0    //把串口1收到的发出来
 #define sbus_send_rx_buf_debug 0     //把串口2收到的发出来
@@ -34,14 +38,18 @@ extern bool mpu_rx_flag;
 extern bool sbus_rx_flag;
 extern mpu6050_raw mpu_data_global;
 extern uint8_t can_rx_flag;
-extern pid_pos pid_angle_pitch;
-extern pid_pos pid_speed_pitch;
-extern pid_pos pid_angle_yaw;
-extern pid_pos pid_speed_yaw;
+
+extern pid_pos pid_speed_left_whell;
+extern pid_pos pid_speed_right_whell;
+extern pid_pos pid_speed_bopandianji;
+extern pid_pos pid_angle_bopamdianji;
+
 extern volatile float led_freq;
 extern volatile uint16_t g_led_brightness;
 extern volatile ControlState_t g_robot_control_state;
-
+extern volatile uint8_t ble_control_id;
+extern volatile uint8_t ble_control_id_global;
+extern volatile uint8_t remote_s2;
 //函数声明区
 void debug_send_uart1(uint8_t t);
 

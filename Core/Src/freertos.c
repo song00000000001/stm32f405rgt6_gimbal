@@ -52,6 +52,7 @@ osThreadId breathing_led_tHandle;
 osThreadId mpu_read_taskHandle;
 osThreadId can1_rx_taskHandle;
 osThreadId sbus_rx_taskHandle;
+osThreadId bopan_motor_tasHandle;
 osMessageQId led_control_queueHandle;
 uint8_t led_control_queueBuffer[ 5 * 2 ];
 osStaticMessageQDef_t led_control_queueControlBlock;
@@ -67,6 +68,7 @@ void led_breath(void const * argument);
 void mpu6050_read(void const * argument);
 void can1_rx(void const * argument);
 void sbus_receive(void const * argument);
+void bopan_motor_set(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -141,6 +143,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of sbus_rx_task */
   osThreadDef(sbus_rx_task, sbus_receive, osPriorityHigh, 0, 128);
   sbus_rx_taskHandle = osThreadCreate(osThread(sbus_rx_task), NULL);
+
+  /* definition and creation of bopan_motor_tas */
+  osThreadDef(bopan_motor_tas, bopan_motor_set, osPriorityBelowNormal, 0, 128);
+  bopan_motor_tasHandle = osThreadCreate(osThread(bopan_motor_tas), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -237,6 +243,24 @@ __weak void sbus_receive(void const * argument)
     osDelay(1);
   }
   /* USER CODE END sbus_receive */
+}
+
+/* USER CODE BEGIN Header_bopan_motor_set */
+/**
+* @brief Function implementing the bopan_motor_tas thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_bopan_motor_set */
+__weak void bopan_motor_set(void const * argument)
+{
+  /* USER CODE BEGIN bopan_motor_set */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END bopan_motor_set */
 }
 
 /* Private application code --------------------------------------------------*/
