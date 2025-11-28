@@ -127,15 +127,16 @@ int main(void)
 				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
 				pid_angle.now =  (float)counter_num*360/28000.0f;
 				//Motor_run(pid_cal_pos(&pid_angle));
-				vofa_send(4,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target),(float)pid_angle.output);	//��ʱ8.9us
+				//vofa_send(4,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target),(float)pid_angle.output);	//��ʱ8.9us
 			}
 			else{
 				//counter_num=  (int16_t)__HAL_TIM_GET_COUNTER(EN1_TIM);
 				pid_angle.now =  (float)counter_num*360/28000.0f;
 				led_breath_freq=pid_angle.target;
-				vofa_send(3,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target));	//��ʱ8.9us
+				//vofa_send(3,(float)pid_angle.target,(float)pid_angle.now,(float)(pid_angle.now-pid_angle.target));	//��ʱ8.9us
 				//Motor_run(pid_angle.target);
-			}  
+			}
+			ble_print("startuart",9);
 			task_flags.run_pid_pos_loop=false;
 			HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_11);
 		}

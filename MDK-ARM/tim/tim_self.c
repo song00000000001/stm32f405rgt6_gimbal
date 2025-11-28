@@ -47,10 +47,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) // 该函数在 stm3
 		// 比较计数器和设定的亮度值
 		if (pwm_counter < led_brightness) {
 				// 计数值小于亮度值，输出低电平点亮LED (大部分开发板PC13是低电平点亮)
-				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET); 
 		} else {
 				// 计数值大于等于亮度值，输出高电平熄灭LED
-				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
 		}
 
 		// 计数器自增
