@@ -29,7 +29,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         motor_info[index].motor_speed    = ((rx_data[2] << 8) | rx_data[3]);
         }
     }
-  
+#if 0 //由于手上的开发板的Led占用了Pb13引脚,故先注释掉can2相关逻辑
     if (hcan->Instance == CAN2)
     {
         HAL_CAN_GetRxMessage(&hcan2, CAN_RX_FIFO0, &rx_header, rx_data);
@@ -41,7 +41,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             can_rx_flag=1;
         }
     }
-    
+#endif    
     if (can_cnt == 1000)
     {
         can_cnt = 0;
@@ -113,10 +113,11 @@ void can2_filter_init(void)
     can_filter.FilterFIFOAssignment = CAN_RX_FIFO0;
     can_filter.FilterActivation = ENABLE;
     // can_filter.SlaveStartFilterBank 在为CAN2配置时是无效的，可以不设置
-
+    #if 0
     HAL_CAN_ConfigFilter(&hcan2, &can_filter);
     HAL_CAN_Start(&hcan2);
     HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
+    #endif
 }
 
 

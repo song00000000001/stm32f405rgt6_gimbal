@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F405xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;../Drivers/STM32F4xx_HAL_Driver/Inc;../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F4xx/Include;../Drivers/CMSIS/Include;../MDK-ARM;./breathing_led;./motor;./pid;./ble;../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F;./can;./eMPL;./DMP;./filter;./dr16;./task</IncludePath>
+              <IncludePath>../Core/Inc;../Drivers/STM32F4xx_HAL_Driver/Inc;../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F4xx/Include;../Drivers/CMSIS/Include;../MDK-ARM;./breathing_led;./motor;./pid;./ble;../Middlewares/Third_Party/FreeRTOS/Source/include;../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS;../Middlewares/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F;./can;./eMPL;./DMP;./filter;./dr16;./task;..\Systemview</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1831,6 +1831,76 @@
               <FileName>task_self.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\task\task_self.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>sysview</GroupName>
+          <Files>
+            <File>
+              <FileName>Global.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\Global.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Systemview\SEGGER_RTT.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_RTT.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT_Conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_RTT_Conf.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_Conf.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_Conf.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_ConfDefaults.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_ConfDefaults.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_Config_FreeRTOS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_Config_FreeRTOS.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_FreeRTOS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_FreeRTOS.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_FreeRTOS.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_FreeRTOS.h</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_SYSVIEW_Int.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Systemview\SEGGER_SYSVIEW_Int.h</FilePath>
             </File>
           </Files>
         </Group>

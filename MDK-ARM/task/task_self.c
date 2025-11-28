@@ -120,7 +120,7 @@ void can1_rx(void const * argument){
         // 输出电压到电机
         if(g_robot_control_state == CONTROL_ENABLED) {
             set_motor_voltage(0x1FF,0, -motor_output[0], 0, 0, &hcan1);//pitch motor
-            set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);//yaw motor
+            //set_motor_voltage(0x1FF,0, 0, 0, motor_output[4], &hcan2);//yaw motor
             set_motor_voltage(0x200,motor_output[1],motor_output[2],motor_output[3],0,&hcan1);//left wheel
         }
 		else{
@@ -239,6 +239,10 @@ void debug_send_uart1(uint8_t t){
     vofa_send(5,(float)motor_info_global[0].motor_angle,(float)motor_info_global[1].motor_angle,
         (float)motor_info_global[2].motor_angle,(float)motor_info_global[3].motor_angle
         ,(float)motor_info_global[4].motor_angle);
+    //由于只带了jlink,而且jlink不知道为什么会使vofa打不开串口,一开就闪退,只能用prinftf调试
+    case 5:
+    my_printf("LED freq: %.2f Hz, brightness: %d\r\n",led_freq,g_led_brightness);
+        break;
     default:
         break;
     }
@@ -414,7 +418,7 @@ void mpu6050_read(void const * argument)
             MPU_Get_Accelerometer(&ax,&ay,&az);
             MPU_Get_Gyroscope(&gx,&gy,&gz);
         #endif    
-        mpu_dmp_get_data(&mpu_data);
+        //mpu_dmp_get_data(&mpu_data);
 		//MPU_Get_Gyroscope(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
 		//MPU_Get_Accelerometer(&mpu_data.gx,&mpu_data.gy,&mpu_data.gz);
 		//绝对yaw角度处理
@@ -436,7 +440,7 @@ void mpu6050_read(void const * argument)
 		mpu_rx_flag =true;  //提示数据更新
         
 		//发送调试信息
-        debug_send_uart1(2);
+        debug_send_uart1(5);
 
 	}
   /* USER CODE END mpu6050_read */

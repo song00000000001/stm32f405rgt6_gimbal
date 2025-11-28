@@ -31,7 +31,7 @@
 #include "inv_mpu.h"
 #include "bsp_can.h"
 #include "task_self.h"
-
+#include "SEGGER_SYSVIEW.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -101,7 +101,6 @@ int main(void)
   MX_TIM5_Init();
   MX_CAN1_Init();
   MX_USART2_UART_Init();
-  MX_CAN2_Init();
   /* USER CODE BEGIN 2 */
 	//1.串口
 	ble_Init();	
@@ -110,10 +109,16 @@ int main(void)
 	
 	//3.mpu
 	//MPU_Init();
-	mpu_dmp_init();
+    //由于自己的开发版没有板载MPU6050,故注释掉相关初始化代码
+	//mpu_dmp_init();
 	//4.can
 	can1_filter_init();
 	can2_filter_init();
+
+    // 5. 启动 SystemView 记录
+    // 建议加一个判断，只有在连接了调试器时才记录，避免不调试时占资源（可选）
+    SEGGER_SYSVIEW_Conf();  // 配置
+    //SEGGER_SYSVIEW_Start(); // 启动
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
@@ -212,10 +217,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		//led_pwm软件,tim_f=1mhz/10=100khz,pwm_f=100khz/100=1khz
 		static uint8_t pwm_counter = 0;
 		if (pwm_counter < g_led_brightness) {
-				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+				//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET); 
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET); 
 		}
 		else {
-				HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+				//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET); 
 		}
 		pwm_counter++;
 		if (pwm_counter >= 100) {

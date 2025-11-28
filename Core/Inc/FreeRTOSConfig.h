@@ -134,6 +134,13 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+// 1. 启用 FreeRTOS 的 Trace 功能
+#define configUSE_TRACE_FACILITY                1
+#define configUSE_STATS_FORMATTING_FUNCTIONS    1 
+
+// 2. 包含 SystemView 的 FreeRTOS 适配头文件
+// 注意：必须放在 configUSE_TRACE_FACILITY 定义之后
+#include "SEGGER_SYSVIEW_FreeRTOS.h"
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */
