@@ -133,7 +133,7 @@ void MX_FREERTOS_Init(void) {
   breathing_led_tHandle = osThreadCreate(osThread(breathing_led_t), NULL);
 
   /* definition and creation of mpu_read_task */
-  osThreadDef(mpu_read_task, mpu6050_read, osPriorityNormal, 0, 128);
+  osThreadDef(mpu_read_task, mpu6050_read, osPriorityNormal, 0, 512);
   mpu_read_taskHandle = osThreadCreate(osThread(mpu_read_task), NULL);
 
   /* definition and creation of can1_rx_task */

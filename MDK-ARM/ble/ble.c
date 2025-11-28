@@ -63,12 +63,12 @@ void ble_print(uint8_t* buf,uint16_t len)
 	}
 	*/
 	// 最后兜底：阻塞发送，确保调试信息不会完全丢失	
-	//HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
+	HAL_UART_Transmit(ble_uart, (uint8_t *) buf, len, 100);
 }
 void ble_Init(void)
 {
 	//my_printf("uart1_start\n");
-	ble_print((uint8_t*)"start",5);
+	ble_print((uint8_t*)"start\n",5);
 	#if ble_uart_send_debug
 		my_printf("start_uart1\n");
 	#endif
