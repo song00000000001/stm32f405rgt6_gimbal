@@ -42,7 +42,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void ble_print(uint8_t* buf,uint16_t len)
 {
 	if (len == 0 || buf == NULL) return;
-	if (len > BLE_TX_BUF_LEN) len = BLE_TX_BUF_LEN;
+	//if (len > BLE_TX_BUF_LEN) len = BLE_TX_BUF_LEN;
 
 	// 首次尝试使用 DMA
 	if (HAL_UART_Transmit_DMA(ble_uart, buf, len) == HAL_OK) {
@@ -210,7 +210,7 @@ void my_printf(const char *format, ...)
     va_start(args, format);
 
     int len = vsnprintf((char*)ble_tx_buffer, BLE_TX_BUF_LEN, format, args);
-    if (len > 0 && len < BLE_TX_BUF_LEN)
+    if (len > 0)// && len < BLE_TX_BUF_LEN)
     {
       ble_print((uint8_t *)ble_tx_buffer,len);
     }

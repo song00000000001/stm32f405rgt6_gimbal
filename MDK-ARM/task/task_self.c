@@ -440,8 +440,8 @@ void mpu6050_read(void const * argument)
 		mpu_rx_flag =true;  //提示数据更新
         
 		//发送调试信息
-        debug_send_uart1(5);
-
+       debug_send_uart1(2);
+	  //my_printf("LED freq: %.2f Hz, brightness: %d\r\n",led_freq,g_led_brightness);
 	}
   /* USER CODE END mpu6050_read */
 }

@@ -255,7 +255,7 @@ void SYSVIEW_SendTaskInfo(U32 TaskID, const char* sName, unsigned Prio, U32 Stac
 */
 // Callbacks provided to SYSTEMVIEW by FreeRTOS
 const SEGGER_SYSVIEW_OS_API SYSVIEW_X_OS_TraceAPI = {
-  0,// _cbGetTime,改为 0，让 SystemView 自动使用 DWT 周期计数
+   _cbGetTime,//改为 0，让 SystemView 自动使用 DWT 周期计数
   _cbSendTaskList,
 };
 
