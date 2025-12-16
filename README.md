@@ -1,0 +1,1 @@
+这份代码用于测试云台,基于freertos,并且用了mpu6050dmp直出角速度作为yaw和pitch的速度环输入。
